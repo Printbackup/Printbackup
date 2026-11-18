@@ -1,0 +1,2084 @@
+<!DOCTYPE html>
+<html lang="pt-BR" class="h-full">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>PrintBackup Pro — Controle de Estoque de Impressoras Backup</title>
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Google Fonts: Inter -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <!-- Phosphor Icons -->
+  <script src="https://unpkg.com/@phosphor-icons/web"></script>
+  <!-- Chart.js e Plugin DataLabels -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.2.0"></script>
+
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', 'sans-serif'],
+          },
+          colors: {
+            brand: {
+              50: '#eff6ff',
+              100: '#dbeafe',
+              500: '#3b82f6',
+              600: '#2563eb',
+              700: '#1d4ed8',
+              900: '#1e3a8a',
+            }
+          }
+        }
+      }
+    }
+  </script>
+
+  <style>
+    body {
+      font-family: 'Inter', sans-serif;
+      background-color: #f8fafc;
+      color: #0f172a;
+    }
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #f1f5f9;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #cbd5e1;
+      border-radius: 9999px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: #94a3b8;
+    }
+    .modal-backdrop {
+      background-color: rgba(15, 23, 42, 0.55);
+      backdrop-filter: blur(2px);
+    }
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(6px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    .animate-fade-in {
+      animation: fadeIn 0.2s ease-out forwards;
+    }
+  </style>
+</head>
+<body class="h-full flex flex-col antialiased">
+
+  <!-- ==================== TELA DE LOGIN ==================== -->
+  <div id="login-screen" class="min-h-screen flex items-center justify-center p-4 bg-gradient-to-br from-slate-900 via-slate-800 to-brand-900">
+    <div class="bg-white rounded-2xl shadow-2xl border border-slate-200 max-w-md w-full overflow-hidden animate-fade-in">
+      <div class="p-8 pb-6 text-center border-b border-slate-100">
+        <div class="w-16 h-16 rounded-2xl bg-brand-600 text-white flex items-center justify-center mx-auto shadow-lg shadow-brand-600/30 mb-4">
+          <i class="ph-bold ph-printer text-3xl"></i>
+        </div>
+        <h1 class="text-2xl font-extrabold text-slate-900">PrintBackup <span class="text-brand-600">Pro</span></h1>
+        <p class="text-sm text-slate-500 mt-1">Controle de Impressoras de Contingência</p>
+
+        <div class="mt-4 inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-semibold bg-amber-50 text-amber-800 border border-amber-200" id="login-connection-badge">
+          <span class="w-2 h-2 rounded-full bg-amber-500"></span>
+          <span>Modo Demonstração (Local)</span>
+        </div>
+      </div>
+
+      <form onsubmit="handleLogin(event)" class="p-8 pt-6 space-y-4">
+        <div>
+          <label class="block text-xs font-bold uppercase tracking-wider text-slate-600 mb-1.5">Usuário</label>
+          <div class="relative">
+            <i class="ph ph-user absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 text-lg"></i>
+            <input type="text" id="login-username" required autocomplete="username" placeholder="Ex: admin ou tecnico" class="w-full pl-10 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 focus:bg-white transition" />
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-xs font-bold uppercase tracking-wider text-slate-600 mb-1.5">Senha</label>
+          <div class="relative">
+            <i class="ph ph-lock-key absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 text-lg"></i>
+            <input type="password" id="login-password" required autocomplete="current-password" placeholder="••••••••" class="w-full pl-10 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 focus:bg-white transition" />
+          </div>
+        </div>
+
+        <div id="login-error" class="hidden text-xs font-semibold text-rose-600 bg-rose-50 border border-rose-200 px-3.5 py-2.5 rounded-xl flex items-center gap-2">
+          <i class="ph-bold ph-warning-circle text-base shrink-0"></i>
+          <span id="login-error-text">Usuário ou senha inválidos.</span>
+        </div>
+
+        <button type="submit" id="btn-login-submit" class="w-full py-3 px-4 bg-brand-600 hover:bg-brand-700 text-white font-bold rounded-xl text-sm shadow-lg shadow-brand-600/25 transition flex items-center justify-center gap-2">
+          <span>Entrar no Sistema</span>
+          <i class="ph-bold ph-arrow-right"></i>
+        </button>
+
+        <!-- Acesso rápido para teste -->
+        <div id="quick-login-box" class="pt-3 border-t border-slate-100">
+          <p class="text-[11px] font-medium text-slate-400 text-center mb-2">Acesso rápido (clique para preencher):</p>
+          <div class="grid grid-cols-2 gap-2">
+            <button type="button" onclick="fillDemoLogin('admin', '1234')" class="px-3 py-2 bg-slate-50 hover:bg-slate-100 border border-slate-200 rounded-xl text-xs text-slate-700 font-semibold transition flex items-center justify-center gap-1.5">
+              <i class="ph-bold ph-shield-check text-brand-600"></i>
+              Admin (admin)
+            </button>
+            <button type="button" onclick="fillDemoLogin('tecnico', '1234')" class="px-3 py-2 bg-slate-50 hover:bg-slate-100 border border-slate-200 rounded-xl text-xs text-slate-700 font-semibold transition flex items-center justify-center gap-1.5">
+              <i class="ph-bold ph-wrench text-slate-600"></i>
+              Técnico (tecnico)
+            </button>
+          </div>
+        </div>
+
+        <div class="pt-2 text-center">
+          <button type="button" onclick="openSheetsConfigModal()" class="inline-flex items-center gap-1.5 text-xs font-semibold text-emerald-700 hover:text-emerald-800 bg-emerald-50 hover:bg-emerald-100 px-3.5 py-2 rounded-xl transition">
+            <i class="ph-bold ph-google-logo"></i>
+            Configurar Conexão Google Planilhas
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ==================== APLICAÇÃO PRINCIPAL ==================== -->
+  <div id="app-shell" class="hidden min-h-screen flex flex-col">
+
+    <!-- Header Desktop-First -->
+    <header class="bg-white border-b border-slate-200 sticky top-0 z-30 shadow-2xs">
+      <div class="max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="flex justify-between items-center h-16 gap-4">
+          <!-- Logo -->
+          <div class="flex items-center gap-3 shrink-0">
+            <div class="w-10 h-10 rounded-xl bg-brand-600 text-white flex items-center justify-center shadow-sm">
+              <i class="ph-bold ph-printer text-xl"></i>
+            </div>
+            <div>
+              <div class="flex items-center gap-2">
+                <h1 class="text-lg font-extrabold text-slate-900 leading-tight">PrintBackup <span class="text-brand-600">Pro</span></h1>
+                <span id="header-db-indicator" class="hidden sm:inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-50 text-amber-700 border border-amber-200">
+                  <span class="w-1.5 h-1.5 rounded-full bg-amber-500"></span>
+                  Modo Local
+                </span>
+              </div>
+              <p class="text-[11px] text-slate-500 hidden lg:block">Laboratório de Impressoras Backup</p>
+            </div>
+          </div>
+
+          <!-- Navegação Desktop (Dashboard em 1º à esquerda) -->
+          <nav class="hidden md:flex items-center gap-1 bg-slate-100 p-1 rounded-xl">
+            <button onclick="switchTab('dashboard')" id="nav-dashboard" class="nav-btn flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-bold transition-all bg-white text-brand-600 shadow-xs">
+              <i class="ph-bold ph-chart-pie-slice text-base"></i>
+              Dashboard
+            </button>
+            <button onclick="switchTab('inventario')" id="nav-inventario" class="nav-btn flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all text-slate-600 hover:text-slate-900">
+              <i class="ph-bold ph-table text-base"></i>
+              Controle de Estoque
+              <span id="badge-total-nav" class="px-2 py-0.5 text-xs rounded-full bg-brand-50 text-brand-700 font-bold">0</span>
+            </button>
+            <button onclick="switchTab('historico')" id="nav-historico" class="nav-btn flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all text-slate-600 hover:text-slate-900">
+              <i class="ph-bold ph-clock-counter-clockwise text-base"></i>
+              Histórico
+            </button>
+            <button onclick="switchTab('usuarios')" id="nav-usuarios" class="nav-btn hidden flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all text-slate-600 hover:text-slate-900">
+              <i class="ph-bold ph-users-three text-base"></i>
+              Usuários
+            </button>
+          </nav>
+
+          <!-- Perfil e Ações -->
+          <div class="flex items-center gap-2 sm:gap-3">
+            <button onclick="syncWithGoogleSheets()" id="btn-header-sync" class="hidden p-2.5 text-emerald-700 hover:bg-emerald-50 rounded-xl transition" title="Sincronizar com Google Planilhas">
+              <i class="ph-bold ph-arrows-clockwise text-lg"></i>
+            </button>
+
+            <button onclick="openSheetsConfigModal()" class="p-2.5 text-slate-600 hover:text-emerald-700 hover:bg-emerald-50 rounded-xl border border-slate-200 transition" title="Configurar Google Planilhas">
+              <i class="ph-bold ph-file-xls text-emerald-600 text-lg"></i>
+            </button>
+
+            <div class="hidden sm:flex items-center gap-2.5 pl-3 border-l border-slate-200">
+              <div class="w-9 h-9 rounded-full bg-brand-100 text-brand-700 flex items-center justify-center font-bold text-sm" id="header-user-avatar">A</div>
+              <div class="text-left">
+                <p id="header-user-name" class="text-xs font-bold text-slate-900 leading-tight">Administrador</p>
+                <span id="header-user-role" class="inline-block text-[10px] font-semibold px-1.5 py-0.2 rounded bg-brand-50 text-brand-700">Administrador</span>
+              </div>
+              <button onclick="logout()" class="p-2 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-xl transition ml-1" title="Sair">
+                <i class="ph-bold ph-sign-out text-lg"></i>
+              </button>
+            </div>
+
+            <button onclick="logout()" class="sm:hidden p-2 text-slate-600 hover:text-rose-600 rounded-xl" title="Sair">
+              <i class="ph-bold ph-sign-out text-lg"></i>
+            </button>
+          </div>
+        </div>
+
+        <!-- Navegação Mobile -->
+        <div class="flex md:hidden border-t border-slate-100 py-2 gap-1 overflow-x-auto">
+          <button onclick="switchTab('dashboard')" id="mob-dashboard" class="mob-btn flex-1 flex items-center justify-center gap-1 py-2 px-2 rounded-lg text-xs font-bold bg-brand-50 text-brand-600 whitespace-nowrap">
+            <i class="ph-bold ph-chart-pie-slice"></i>
+            Dashboard
+          </button>
+          <button onclick="switchTab('inventario')" id="mob-inventario" class="mob-btn flex-1 flex items-center justify-center gap-1 py-2 px-2 rounded-lg text-xs font-medium text-slate-600 whitespace-nowrap">
+            <i class="ph-bold ph-table"></i>
+            Controle de Estoque
+          </button>
+          <button onclick="switchTab('historico')" id="mob-historico" class="mob-btn flex-1 flex items-center justify-center gap-1 py-2 px-2 rounded-lg text-xs font-medium text-slate-600 whitespace-nowrap">
+            <i class="ph-bold ph-clock-counter-clockwise"></i>
+            Histórico
+          </button>
+          <button onclick="switchTab('usuarios')" id="mob-usuarios" class="mob-btn hidden flex-1 flex items-center justify-center gap-1 py-2 px-2 rounded-lg text-xs font-medium text-slate-600 whitespace-nowrap">
+            <i class="ph-bold ph-users-three"></i>
+            Usuários
+          </button>
+        </div>
+      </div>
+    </header>
+
+    <!-- Conteúdo Principal -->
+    <main class="flex-1 max-w-[1440px] w-full mx-auto px-4 sm:px-6 lg:px-8 py-6">
+
+      <!-- ==================== ABA 1: DASHBOARD GERENCIAL ==================== -->
+      <section id="tab-dashboard" class="space-y-6 animate-fade-in">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div>
+            <h2 class="text-2xl font-extrabold text-slate-900">Dashboard Gerencial</h2>
+            <p class="text-sm text-slate-500">Visão rápida da disponibilidade e situação das impressoras backup.</p>
+          </div>
+          <div class="flex flex-wrap items-center gap-2">
+            <button onclick="openNewPrinterModal()" class="inline-flex items-center gap-2 px-4 py-2.5 bg-brand-600 hover:bg-brand-700 text-white rounded-xl text-sm font-bold shadow-sm transition">
+              <i class="ph-bold ph-plus text-base"></i>
+              Nova Impressora
+            </button>
+            <button onclick="exportCSV()" class="inline-flex items-center gap-2 px-4 py-2.5 bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 rounded-xl text-sm font-semibold shadow-2xs transition">
+              <i class="ph-bold ph-download-simple text-base"></i>
+              Exportar CSV
+            </button>
+          </div>
+        </div>
+
+        <!-- 5 PAINÉIS DE INDICADORES (LETRAS E NÚMEROS AMPLIADOS) -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+          <!-- Card 1: Total Inventário -->
+          <div onclick="filterFromDashboard('ALL')" class="cursor-pointer bg-white p-6 rounded-2xl border border-slate-200 hover:border-brand-400 shadow-2xs hover:shadow-md transition flex flex-col justify-between">
+            <div class="flex items-start justify-between gap-2">
+              <span class="text-base font-bold text-slate-800 leading-snug">Total Inventário</span>
+              <div class="w-10 h-10 rounded-xl bg-brand-50 text-brand-600 flex items-center justify-center shrink-0">
+                <i class="ph-bold ph-printer text-xl"></i>
+              </div>
+            </div>
+            <div class="mt-4 flex items-baseline justify-between gap-2">
+              <span id="kpi-total" class="text-4xl font-black text-slate-900 tracking-tight">0</span>
+              <span id="kpi-availability" class="text-xs font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-2.5 py-1 rounded-full">0% disp.</span>
+            </div>
+          </div>
+
+          <!-- Card 2: Disponíveis -->
+          <div onclick="filterFromDashboard('Disponível no Estoque')" class="cursor-pointer bg-white p-6 rounded-2xl border-l-[6px] border-l-emerald-500 border border-slate-200 hover:border-emerald-400 shadow-2xs hover:shadow-md transition flex flex-col justify-between">
+            <div class="flex items-start justify-between gap-2">
+              <span class="text-base font-bold text-emerald-800 leading-snug">Disponíveis</span>
+              <span class="w-3.5 h-3.5 rounded-full bg-emerald-500 ring-4 ring-emerald-100 shrink-0 mt-1"></span>
+            </div>
+            <div class="mt-4 flex items-baseline justify-between">
+              <span id="kpi-disponivel" class="text-4xl font-black text-emerald-600 tracking-tight">0</span>
+              <span class="text-xs font-semibold text-emerald-700">No estoque</span>
+            </div>
+          </div>
+
+          <!-- Card 3: Em Uso -->
+          <div onclick="filterFromDashboard('Em Uso (Backup)')" class="cursor-pointer bg-white p-6 rounded-2xl border-l-[6px] border-l-amber-400 border border-slate-200 hover:border-amber-400 shadow-2xs hover:shadow-md transition flex flex-col justify-between">
+            <div class="flex items-start justify-between gap-2">
+              <span class="text-base font-bold text-amber-800 leading-snug">Em Uso</span>
+              <span class="w-3.5 h-3.5 rounded-full bg-amber-400 ring-4 ring-amber-100 shrink-0 mt-1"></span>
+            </div>
+            <div class="mt-4 flex items-baseline justify-between">
+              <span id="kpi-emuso" class="text-4xl font-black text-amber-600 tracking-tight">0</span>
+              <span class="text-xs font-semibold text-amber-700">Backup ativo</span>
+            </div>
+          </div>
+
+          <!-- Card 4: Em Manutenção -->
+          <div onclick="filterFromDashboard('Em Manutenção')" class="cursor-pointer bg-white p-6 rounded-2xl border-l-[6px] border-l-rose-500 border border-slate-200 hover:border-rose-400 shadow-2xs hover:shadow-md transition flex flex-col justify-between">
+            <div class="flex items-start justify-between gap-2">
+              <span class="text-base font-bold text-rose-800 leading-snug">Em Manutenção</span>
+              <span class="w-3.5 h-3.5 rounded-full bg-rose-500 ring-4 ring-rose-100 shrink-0 mt-1"></span>
+            </div>
+            <div class="mt-4 flex items-baseline justify-between">
+              <span id="kpi-manutencao" class="text-4xl font-black text-rose-600 tracking-tight">0</span>
+              <span class="text-xs font-semibold text-rose-700">Em reparo</span>
+            </div>
+          </div>
+
+          <!-- Card 5: Baixadas -->
+          <div onclick="filterFromDashboard('Descartada / Baixada')" class="cursor-pointer bg-white p-6 rounded-2xl border-l-[6px] border-l-slate-400 border border-slate-200 hover:border-slate-400 shadow-2xs hover:shadow-md transition flex flex-col justify-between">
+            <div class="flex items-start justify-between gap-2">
+              <span class="text-base font-bold text-slate-700 leading-snug">Baixadas</span>
+              <span class="w-3.5 h-3.5 rounded-full bg-slate-400 ring-4 ring-slate-100 shrink-0 mt-1"></span>
+            </div>
+            <div class="mt-4 flex items-baseline justify-between">
+              <span id="kpi-descartada" class="text-4xl font-black text-slate-600 tracking-tight">0</span>
+              <span class="text-xs font-semibold text-slate-500">Descartadas</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- GRÁFICOS GERENCIAIS -->
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+          <!-- Gráfico de Rosca/Pizza com Legenda Vertical à Esquerda + Quantidade -->
+          <div class="lg:col-span-6 bg-white p-6 rounded-2xl border border-slate-200 shadow-2xs flex flex-col">
+            <h3 class="text-base font-bold text-slate-900 mb-0.5">Distribuição por Status</h3>
+            <p class="text-xs text-slate-500 mb-5">Clique em um status para filtrar o estoque</p>
+
+            <div class="flex-1 flex flex-col sm:flex-row items-center justify-between gap-6">
+              <!-- Legenda Vertical à Esquerda -->
+              <div id="status-custom-legend" class="w-full sm:w-1/2 space-y-2.5"></div>
+
+              <!-- Canvas Rosca -->
+              <div class="w-full sm:w-1/2 h-[220px] relative flex items-center justify-center">
+                <canvas id="statusChart"></canvas>
+              </div>
+            </div>
+          </div>
+
+          <!-- Gráfico de Barras Horizontais com Quantidade no Final da Barra -->
+          <div class="lg:col-span-6 bg-white p-6 rounded-2xl border border-slate-200 shadow-2xs flex flex-col">
+            <h3 class="text-base font-bold text-slate-900 mb-0.5">Quantidade por Modelo</h3>
+            <p class="text-xs text-slate-500 mb-4">Total de impressoras cadastradas por modelo</p>
+            <div class="relative flex-1 min-h-[230px]">
+              <canvas id="modelChart"></canvas>
+            </div>
+          </div>
+        </div>
+
+        <!-- Últimas Movimentações em Cartões Limpos -->
+        <div class="space-y-3">
+          <div class="flex items-center justify-between">
+            <div>
+              <h3 class="text-base font-bold text-slate-900">Últimas Movimentações</h3>
+              <p class="text-xs text-slate-500">Registros mais recentes realizados no laboratório</p>
+            </div>
+            <button onclick="switchTab('historico')" class="text-xs font-bold text-brand-600 hover:text-brand-700 flex items-center gap-1">
+              Ver todo o histórico
+              <i class="ph-bold ph-arrow-right"></i>
+            </button>
+          </div>
+          <div id="dashboard-recent-movements" class="space-y-2.5"></div>
+        </div>
+      </section>
+
+      <!-- ==================== ABA 2: CONTROLE DE ESTOQUE (LISTAGEM POR LINHAS) ==================== -->
+      <section id="tab-inventario" class="hidden space-y-5 animate-fade-in">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div>
+            <h2 class="text-2xl font-extrabold text-slate-900">Controle de Estoque</h2>
+            <p class="text-sm text-slate-500">Clique em <strong>Movimentar</strong> na linha da impressora para registrar saída, retorno ou manutenção.</p>
+          </div>
+
+          <!-- Filtros Rápidos -->
+          <div class="flex flex-wrap items-center gap-1.5">
+            <button onclick="setStatusFilter('ALL')" id="pill-ALL" class="filter-pill px-3.5 py-2 rounded-xl text-xs font-bold bg-slate-900 text-white transition">Todas</button>
+            <button onclick="setStatusFilter('Disponível no Estoque')" id="pill-Disponível no Estoque" class="filter-pill px-3.5 py-2 rounded-xl text-xs font-bold bg-white border border-slate-200 text-emerald-700 hover:bg-emerald-50 transition">🟢 Disponíveis</button>
+            <button onclick="setStatusFilter('Em Uso (Backup)')" id="pill-Em Uso (Backup)" class="filter-pill px-3.5 py-2 rounded-xl text-xs font-bold bg-white border border-slate-200 text-amber-700 hover:bg-amber-50 transition">🟡 Em Uso</button>
+            <button onclick="setStatusFilter('Em Manutenção')" id="pill-Em Manutenção" class="filter-pill px-3.5 py-2 rounded-xl text-xs font-bold bg-white border border-slate-200 text-rose-700 hover:bg-rose-50 transition">🔴 Manutenção</button>
+            <button onclick="setStatusFilter('Descartada / Baixada')" id="pill-Descartada / Baixada" class="filter-pill px-3.5 py-2 rounded-xl text-xs font-bold bg-white border border-slate-200 text-slate-600 hover:bg-slate-100 transition">⚪ Baixadas</button>
+          </div>
+        </div>
+
+        <!-- Barra de Busca e Ações -->
+        <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-2xs flex flex-col lg:flex-row lg:items-center justify-between gap-3">
+          <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5 flex-1">
+            <div class="relative flex-1 max-w-md">
+              <i class="ph ph-magnifying-glass absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 text-lg"></i>
+              <input type="text" id="search-inventory" oninput="renderInventory()" placeholder="Buscar por Serial, Modelo ou Localização..." class="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 focus:bg-white transition" />
+            </div>
+
+            <select id="select-status-filter" onchange="setStatusFilter(this.value)" class="px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-semibold text-slate-700 focus:outline-none focus:ring-2 focus:ring-brand-500">
+              <option value="ALL">Todos os Status</option>
+              <option value="Disponível no Estoque">🟢 Disponível no Estoque</option>
+              <option value="Em Uso (Backup)">🟡 Em Uso (Backup)</option>
+              <option value="Em Manutenção">🔴 Em Manutenção</option>
+              <option value="Descartada / Baixada">⚪ Descartada / Baixada</option>
+            </select>
+          </div>
+
+          <div class="flex flex-wrap items-center gap-2">
+            <button onclick="syncWithGoogleSheets()" id="btn-sync" class="hidden inline-flex items-center gap-1.5 px-3.5 py-2.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200 rounded-xl text-sm font-semibold transition">
+              <i class="ph-bold ph-arrows-clockwise text-base"></i>
+              <span>Sincronizar</span>
+            </button>
+
+            <button onclick="exportCSV()" class="inline-flex items-center gap-1.5 px-3.5 py-2.5 bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 rounded-xl text-sm font-semibold transition">
+              <i class="ph-bold ph-file-csv text-base"></i>
+              <span>Exportar CSV</span>
+            </button>
+
+            <button onclick="openNewPrinterModal()" class="inline-flex items-center gap-1.5 px-4 py-2.5 bg-brand-600 hover:bg-brand-700 text-white rounded-xl text-sm font-bold shadow-xs transition">
+              <i class="ph-bold ph-plus text-base"></i>
+              <span>Nova Impressora</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Listagem por Linhas Limpa e Espaçada -->
+        <div class="bg-white rounded-2xl border border-slate-200 shadow-2xs overflow-hidden">
+          <div class="overflow-x-auto">
+            <table class="w-full text-left border-collapse min-w-[960px]">
+              <thead>
+                <tr class="bg-slate-50 border-b border-slate-200 text-xs font-bold uppercase tracking-wider text-slate-500">
+                  <th class="py-4 px-5">Impressora (Modelo / Serial)</th>
+                  <th class="py-4 px-5">Status Atual</th>
+                  <th class="py-4 px-5">Localização Atual</th>
+                  <th class="py-4 px-5 text-center">Entrada</th>
+                  <th class="py-4 px-5 text-center">Movs.</th>
+                  <th class="py-4 px-5">Observações</th>
+                  <th class="py-4 px-5 text-right">Ação Rápida</th>
+                </tr>
+              </thead>
+              <tbody id="inventory-table-body" class="divide-y divide-slate-100 text-sm"></tbody>
+            </table>
+          </div>
+
+          <div id="inventory-empty" class="hidden p-12 text-center">
+            <div class="w-12 h-12 rounded-2xl bg-slate-100 text-slate-400 flex items-center justify-center mx-auto mb-3">
+              <i class="ph-bold ph-printer text-2xl"></i>
+            </div>
+            <h3 class="text-base font-bold text-slate-900">Nenhuma impressora encontrada</h3>
+            <p class="text-sm text-slate-500 mt-1">Limpe os filtros ou cadastre uma nova impressora.</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- ==================== ABA 3: HISTÓRICO SIMPLIFICADO EM CARTÕES ==================== -->
+      <section id="tab-historico" class="hidden space-y-5 max-w-5xl mx-auto animate-fade-in">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div>
+            <h2 class="text-2xl font-extrabold text-slate-900">Histórico de Movimentações</h2>
+            <p class="text-sm text-slate-500">Visualização simples e direta de tudo o que entrou, saiu ou foi para manutenção.</p>
+          </div>
+          <div class="relative sm:w-80">
+            <i class="ph ph-magnifying-glass absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400"></i>
+            <input type="text" id="search-history" oninput="renderHistory()" placeholder="Buscar por serial, modelo ou setor..." class="w-full pl-10 pr-4 py-2.5 bg-white border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-brand-500" />
+          </div>
+        </div>
+
+        <!-- Cartões Arejados do Histórico -->
+        <div id="history-cards-container" class="space-y-3"></div>
+      </section>
+
+      <!-- ==================== ABA 4: GERENCIAMENTO DE USUÁRIOS ==================== -->
+      <section id="tab-usuarios" class="hidden space-y-5 max-w-4xl mx-auto animate-fade-in">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div>
+            <h2 class="text-2xl font-extrabold text-slate-900">Controle de Usuários</h2>
+            <p class="text-sm text-slate-500">Gerencie os operadores e administradores do sistema.</p>
+          </div>
+          <button onclick="openNewUserModal()" class="inline-flex items-center gap-1.5 px-4 py-2.5 bg-brand-600 hover:bg-brand-700 text-white rounded-xl text-sm font-bold shadow-xs transition self-start">
+            <i class="ph-bold ph-user-plus text-base"></i>
+            Novo Usuário
+          </button>
+        </div>
+
+        <div class="bg-white rounded-2xl border border-slate-200 shadow-2xs overflow-hidden">
+          <div class="overflow-x-auto">
+            <table class="w-full text-left border-collapse min-w-[600px]">
+              <thead>
+                <tr class="bg-slate-50 border-b border-slate-200 text-xs font-bold uppercase tracking-wider text-slate-500">
+                  <th class="py-4 px-5">Nome Completo</th>
+                  <th class="py-4 px-5">Login</th>
+                  <th class="py-4 px-5">Perfil</th>
+                  <th class="py-4 px-5 text-right">Ações</th>
+                </tr>
+              </thead>
+              <tbody id="users-table-body" class="divide-y divide-slate-100 text-sm"></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+    </main>
+  </div>
+
+  <!-- ==================== MODAL 1: CADASTRAR / EDITAR IMPRESSORA ==================== -->
+  <div id="printer-modal" class="fixed inset-0 z-50 hidden modal-backdrop flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl max-w-lg w-full shadow-2xl border border-slate-200 overflow-hidden animate-fade-in">
+      <div class="px-6 py-4 border-b border-slate-100 flex items-center justify-between">
+        <div class="flex items-center gap-2.5">
+          <div class="w-9 h-9 rounded-xl bg-brand-50 text-brand-600 flex items-center justify-center">
+            <i class="ph-bold ph-printer text-lg"></i>
+          </div>
+          <h3 id="printer-modal-title" class="text-base font-bold text-slate-900">Cadastrar Nova Impressora Backup</h3>
+        </div>
+        <button onclick="closePrinterModal()" class="text-slate-400 hover:text-slate-600 p-1 rounded-lg">
+          <i class="ph-bold ph-x text-lg"></i>
+        </button>
+      </div>
+
+      <form id="printer-form" onsubmit="savePrinter(event)" class="p-6 space-y-4">
+        <input type="hidden" id="edit-printer-id" />
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div class="sm:col-span-2">
+            <label class="block text-xs font-bold text-slate-700 mb-1">Modelo da Impressora *</label>
+            <input type="text" id="field-modelo" required placeholder="Ex: HP LaserJet Pro M404dw" class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 focus:bg-white" />
+          </div>
+
+          <div>
+            <label class="block text-xs font-bold text-slate-700 mb-1">Número de Série (Serial) *</label>
+            <input type="text" id="field-serial" required placeholder="Ex: BRBSN48291" class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm uppercase font-mono focus:outline-none focus:ring-2 focus:ring-brand-500 focus:bg-white" />
+          </div>
+
+          <div>
+            <label class="block text-xs font-bold text-slate-700 mb-1">Data de Entrada *</label>
+            <input type="date" id="field-data-entrada" required class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 focus:bg-white" />
+          </div>
+
+          <div>
+            <label class="block text-xs font-bold text-slate-700 mb-1">Status Atual *</label>
+            <select id="field-status" required class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-medium focus:outline-none focus:ring-2 focus:ring-brand-500 focus:bg-white">
+              <option value="Disponível no Estoque">🟢 Disponível no Estoque</option>
+              <option value="Em Uso (Backup)">🟡 Em Uso (Backup)</option>
+              <option value="Em Manutenção">🔴 Em Manutenção</option>
+              <option value="Descartada / Baixada">⚪ Descartada / Baixada</option>
+            </select>
+          </div>
+
+          <div>
+            <label class="block text-xs font-bold text-slate-700 mb-1">Localização Atual *</label>
+            <input type="text" id="field-localizacao" required placeholder="Ex: Estoque TI - Prateleira A1" class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 focus:bg-white" />
+          </div>
+
+          <div class="sm:col-span-2">
+            <label class="block text-xs font-bold text-slate-700 mb-1">Observações</label>
+            <textarea id="field-observacoes" rows="2" placeholder="Ex: Toner 90%, cabo de força e USB inclusos..." class="w-full px-3.5 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 focus:bg-white"></textarea>
+          </div>
+        </div>
+
+        <div id="printer-form-error" class="hidden text-xs font-semibold text-rose-600 bg-rose-50 border border-rose-200 px-3 py-2 rounded-xl"></div>
+
+        <div class="pt-2 flex items-center justify-end gap-2 border-t border-slate-100">
+          <button type="button" onclick="closePrinterModal()" class="px-4 py-2 text-sm font-semibold text-slate-600 hover:bg-slate-100 rounded-xl transition">Cancelar</button>
+          <button type="submit" class="px-5 py-2.5 bg-brand-600 hover:bg-brand-700 text-white text-sm font-bold rounded-xl shadow-xs transition">Salvar Impressora</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ==================== MODAL 2: MOVIMENTAÇÃO SIMPLIFICADA ==================== -->
+  <div id="move-modal" class="fixed inset-0 z-50 hidden modal-backdrop flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl max-w-md w-full shadow-2xl border border-slate-200 overflow-hidden animate-fade-in">
+      <div class="px-6 py-4 border-b border-slate-100 flex items-center justify-between bg-slate-50">
+        <div class="flex items-center gap-2.5">
+          <div class="w-9 h-9 rounded-xl bg-brand-100 text-brand-700 flex items-center justify-center">
+            <i class="ph-bold ph-arrows-left-right text-lg"></i>
+          </div>
+          <div>
+            <h3 class="text-base font-bold text-slate-900">Movimentar Impressora</h3>
+            <p class="text-xs text-slate-500">Atualiza o estoque e soma +1 no contador</p>
+          </div>
+        </div>
+        <button onclick="closeMoveModal()" class="text-slate-400 hover:text-slate-600 p-1 rounded-lg">
+          <i class="ph-bold ph-x text-lg"></i>
+        </button>
+      </div>
+
+      <form id="move-form" onsubmit="confirmMovement(event)" class="p-6 space-y-4">
+        <input type="hidden" id="move-printer-id" />
+
+        <!-- Identificação Clara do Equipamento -->
+        <div class="bg-slate-50 border border-slate-200 rounded-xl p-4 space-y-2">
+          <div class="flex items-start justify-between gap-2">
+            <div>
+              <p id="move-info-model" class="text-sm font-extrabold text-slate-900">-</p>
+              <p class="text-xs text-slate-500 font-mono">Serial: <strong id="move-info-serial" class="text-slate-800">-</strong></p>
+            </div>
+            <div id="move-info-current-badge"></div>
+          </div>
+          <p class="text-xs text-slate-600 pt-1.5 border-t border-slate-200/80">
+            Local atual: <strong id="move-info-location" class="text-slate-800">-</strong>
+          </p>
+        </div>
+
+        <div class="space-y-3.5">
+          <div>
+            <label class="block text-xs font-bold text-slate-700 mb-1">1. Qual o novo status? *</label>
+            <select id="move-new-status" required onchange="updateMovePreview()" class="w-full px-3.5 py-3 bg-white border border-slate-300 rounded-xl text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-brand-500">
+              <option value="Disponível no Estoque">🟢 Disponível no Estoque</option>
+              <option value="Em Uso (Backup)">🟡 Em Uso (Backup)</option>
+              <option value="Em Manutenção">🔴 Em Manutenção</option>
+              <option value="Descartada / Baixada">⚪ Descartada / Baixada</option>
+            </select>
+          </div>
+
+          <div>
+            <label class="block text-xs font-bold text-slate-700 mb-1">2. Para qual local / setor ela foi? *</label>
+            <input type="text" id="move-new-location" required placeholder="Ex: Recepção, Financeiro, Estoque TI..." class="w-full px-3.5 py-3 bg-white border border-slate-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-brand-500" />
+          </div>
+
+          <div>
+            <label class="block text-xs font-bold text-slate-700 mb-1">3. Observação ou Chamado (Opcional)</label>
+            <input type="text" id="move-note" placeholder="Ex: Chamado #4021 - Troca da impressora do RH" class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 focus:bg-white" />
+          </div>
+        </div>
+
+        <div class="pt-3 flex items-center justify-end gap-2 border-t border-slate-100">
+          <button type="button" onclick="closeMoveModal()" class="px-4 py-2.5 text-sm font-semibold text-slate-600 hover:bg-slate-100 rounded-xl transition">Cancelar</button>
+          <button type="submit" class="px-5 py-2.5 bg-brand-600 hover:bg-brand-700 text-white text-sm font-bold rounded-xl shadow-md shadow-brand-600/20 transition flex items-center gap-1.5">
+            <i class="ph-bold ph-check"></i>
+            Confirmar Movimentação
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ==================== MODAL 3: CADASTRAR USUÁRIO ==================== -->
+  <div id="user-modal" class="fixed inset-0 z-50 hidden modal-backdrop flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl max-w-md w-full shadow-xl border border-slate-200 overflow-hidden animate-fade-in">
+      <div class="px-6 py-4 border-b border-slate-100 flex items-center justify-between">
+        <h3 class="text-base font-bold text-slate-900">Cadastrar Novo Usuário</h3>
+        <button onclick="closeUserModal()" class="text-slate-400 hover:text-slate-600 p-1 rounded-lg">
+          <i class="ph-bold ph-x text-lg"></i>
+        </button>
+      </div>
+
+      <form onsubmit="saveUser(event)" class="p-6 space-y-4">
+        <div>
+          <label class="block text-xs font-bold text-slate-700 mb-1">Nome Completo *</label>
+          <input type="text" id="user-fullname" required placeholder="Ex: Carlos Eduardo" class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 focus:bg-white" />
+        </div>
+        <div>
+          <label class="block text-xs font-bold text-slate-700 mb-1">Login (Usuário) *</label>
+          <input type="text" id="user-username" required placeholder="Ex: carlos.ti" class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm lowercase focus:outline-none focus:ring-2 focus:ring-brand-500 focus:bg-white" />
+        </div>
+        <div>
+          <label class="block text-xs font-bold text-slate-700 mb-1">Senha *</label>
+          <input type="password" id="user-password" required placeholder="Defina uma senha" class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 focus:bg-white" />
+        </div>
+        <div>
+          <label class="block text-xs font-bold text-slate-700 mb-1">Perfil de Acesso *</label>
+          <select id="user-role" required class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 focus:bg-white">
+            <option value="Operador">Operador (Técnico)</option>
+            <option value="Administrador">Administrador</option>
+          </select>
+        </div>
+
+        <div id="user-form-error" class="hidden text-xs font-semibold text-rose-600 bg-rose-50 border border-rose-200 px-3 py-2 rounded-xl"></div>
+
+        <div class="pt-2 flex justify-end gap-2 border-t border-slate-100">
+          <button type="button" onclick="closeUserModal()" class="px-4 py-2 text-sm font-semibold text-slate-600 hover:bg-slate-100 rounded-xl">Cancelar</button>
+          <button type="submit" class="px-5 py-2 bg-brand-600 hover:bg-brand-700 text-white text-sm font-bold rounded-xl">Salvar Usuário</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ==================== MODAL 4: CONFIRMAÇÃO DE EXCLUSÃO ==================== -->
+  <div id="delete-modal" class="fixed inset-0 z-50 hidden modal-backdrop flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl max-w-sm w-full p-6 shadow-xl border border-slate-200 animate-fade-in">
+      <div class="w-11 h-11 rounded-full bg-rose-100 text-rose-600 flex items-center justify-center mb-4">
+        <i class="ph-bold ph-trash text-xl"></i>
+      </div>
+      <h3 class="text-base font-bold text-slate-900">Confirmar Exclusão</h3>
+      <p id="delete-modal-text" class="text-sm text-slate-500 mt-1">Tem certeza que deseja remover este registro?</p>
+      <div class="mt-5 flex justify-end gap-2">
+        <button onclick="closeDeleteModal()" class="px-4 py-2 text-sm font-semibold text-slate-600 hover:bg-slate-100 rounded-xl">Cancelar</button>
+        <button id="btn-confirm-delete" class="px-4 py-2 text-sm font-bold bg-rose-600 hover:bg-rose-700 text-white rounded-xl">Excluir</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== MODAL 5: CONFIGURAÇÃO GOOGLE PLANILHAS + APPS SCRIPT ==================== -->
+  <div id="sheets-modal" class="fixed inset-0 z-50 hidden modal-backdrop flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl max-w-2xl w-full max-h-[90vh] flex flex-col shadow-2xl border border-slate-200 overflow-hidden animate-fade-in">
+      <div class="px-6 py-4 border-b border-slate-100 flex items-center justify-between bg-slate-50">
+        <div class="flex items-center gap-2.5">
+          <div class="w-9 h-9 rounded-xl bg-emerald-100 text-emerald-700 flex items-center justify-center">
+            <i class="ph-bold ph-google-logo text-xl"></i>
+          </div>
+          <div>
+            <h3 class="text-base font-bold text-slate-900">Integração com Google Planilhas</h3>
+            <p class="text-xs text-slate-500">Cole a URL do Web App ou copie o código Google Apps Script</p>
+          </div>
+        </div>
+        <button onclick="closeSheetsConfigModal()" class="text-slate-400 hover:text-slate-600 p-1 rounded-lg">
+          <i class="ph-bold ph-x text-lg"></i>
+        </button>
+      </div>
+
+      <div class="p-6 overflow-y-auto space-y-5 text-sm">
+        <div class="space-y-2">
+          <label class="block text-xs font-bold uppercase tracking-wider text-slate-700">URL do App da Web (Google Apps Script)</label>
+          <div class="flex flex-col sm:flex-row gap-2">
+            <input type="url" id="sheets-url-input" placeholder="https://script.google.com/macros/s/AKfycb.../exec" class="flex-1 px-3.5 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-xs font-mono focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:bg-white" />
+            <button type="button" onclick="saveSheetsUrl()" class="px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-xl shadow-xs transition whitespace-nowrap">
+              Conectar Planilha
+            </button>
+          </div>
+          <div class="flex items-center justify-between pt-1">
+            <span class="text-xs text-slate-500">Deixe em branco para usar o Modo Demonstração Local.</span>
+            <button type="button" onclick="disconnectSheets()" class="text-xs font-semibold text-rose-600 hover:underline">Usar Modo Local</button>
+          </div>
+        </div>
+
+        <div class="bg-slate-50 border border-slate-200 rounded-xl p-4 space-y-2 text-xs text-slate-600">
+          <p class="font-bold text-slate-800">Passo a passo para conectar sua planilha:</p>
+          <ol class="list-decimal list-inside space-y-1">
+            <li>Crie uma planilha no Google Drive e acesse <strong>Extensões &gt; Apps Script</strong>.</li>
+            <li>Apague o conteúdo existente, cole o código abaixo e salve. Ele cria sozinho as abas <strong>Estoque_Impressoras</strong>, <strong>Historico_Movimentacoes</strong> e <strong>Usuarios</strong>.</li>
+            <li>Clique em <strong>Implantar &gt; Nova implantação &gt; App da Web</strong> (Executar como: <em>Eu</em> | Quem tem acesso: <em>Qualquer pessoa</em>) e cole a URL gerada acima.</li>
+          </ol>
+        </div>
+
+        <div class="space-y-2">
+          <div class="flex items-center justify-between">
+            <span class="text-xs font-bold uppercase tracking-wider text-slate-700">Código Google Apps Script (Code.gs)</span>
+            <button type="button" onclick="copyAppsScriptCode()" class="inline-flex items-center gap-1.5 px-3 py-1.5 bg-slate-900 hover:bg-slate-800 text-white rounded-lg text-xs font-bold transition">
+              <i class="ph-bold ph-copy"></i>
+              Copiar Código Script
+            </button>
+          </div>
+          <textarea id="apps-script-code" readonly rows="10" class="w-full p-3.5 bg-slate-900 text-emerald-300 font-mono text-[11px] rounded-xl focus:outline-none leading-relaxed"></textarea>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast de Notificação -->
+  <div id="toast" class="fixed bottom-5 right-5 z-50 transform translate-y-20 opacity-0 transition-all duration-300 pointer-events-none">
+    <div class="bg-slate-900 text-white px-4 py-3 rounded-xl shadow-lg flex items-center gap-2.5 text-sm font-semibold">
+      <i class="ph-bold ph-check-circle text-emerald-400 text-lg"></i>
+      <span id="toast-message">Operação realizada!</span>
+    </div>
+  </div>
+
+  <script>
+    // Registra o plugin DataLabels globalmente, mas desativa por padrão para ativar apenas no gráfico de barras
+    if (typeof ChartDataLabels !== 'undefined') {
+      Chart.register(ChartDataLabels);
+      Chart.defaults.plugins.datalabels.display = false;
+    }
+
+    // ==================== CÓDIGO GOOGLE APPS SCRIPT COMPLETO ====================
+    const GOOGLE_APPS_SCRIPT_TEMPLATE = `// =========================================================================
+// PRINTBACKUP PRO — BACKEND GOOGLE SHEETS (APPS SCRIPT)
+// Cria automaticamente as abas Estoque_Impressoras, Historico_Movimentacoes
+// e Usuarios, com formatação condicional e leitura/gravação via doGet/doPost
+// =========================================================================
+
+function setupSheets() {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+
+  // 1. Aba Estoque_Impressoras
+  let sheetEstoque = ss.getSheetByName('Estoque_Impressoras');
+  if (!sheetEstoque) {
+    sheetEstoque = ss.insertSheet('Estoque_Impressoras');
+    sheetEstoque.appendRow([
+      'ID', 'Modelo', 'Serial', 'Status_Atual', 'Localizacao_Atual',
+      'Data_Entrada', 'Contador_Movimentacoes', 'Observacoes'
+    ]);
+    sheetEstoque.getRange('A1:H1').setFontWeight('bold').setBackground('#e2e8f0');
+    sheetEstoque.setFrozenRows(1);
+
+    const rangeStatus = sheetEstoque.getRange('D2:D500');
+    const rules = [
+      SpreadsheetApp.newConditionalFormatRule()
+        .whenTextEqualTo('Disponível no Estoque')
+        .setBackground('#dcfce7').setFontColor('#166534')
+        .setRanges([rangeStatus]).build(),
+      SpreadsheetApp.newConditionalFormatRule()
+        .whenTextEqualTo('Em Uso (Backup)')
+        .setBackground('#fef9c3').setFontColor('#854d0e')
+        .setRanges([rangeStatus]).build(),
+      SpreadsheetApp.newConditionalFormatRule()
+        .whenTextEqualTo('Em Manutenção')
+        .setBackground('#ffe4e6').setFontColor('#9f1239')
+        .setRanges([rangeStatus]).build(),
+      SpreadsheetApp.newConditionalFormatRule()
+        .whenTextEqualTo('Descartada / Baixada')
+        .setBackground('#f1f5f9').setFontColor('#475569')
+        .setRanges([rangeStatus]).build()
+    ];
+    sheetEstoque.setConditionalFormatRules(rules);
+  }
+
+  // 2. Aba Historico_Movimentacoes
+  let sheetHist = ss.getSheetByName('Historico_Movimentacoes');
+  if (!sheetHist) {
+    sheetHist = ss.insertSheet('Historico_Movimentacoes');
+    sheetHist.appendRow([
+      'ID', 'Data_Hora', 'Printer_ID', 'Modelo', 'Serial',
+      'Status_Anterior', 'Status_Novo', 'Local_Anterior', 'Local_Novo',
+      'Usuario_Responsavel', 'Observacao'
+    ]);
+    sheetHist.getRange('A1:K1').setFontWeight('bold').setBackground('#e2e8f0');
+    sheetHist.setFrozenRows(1);
+  }
+
+  // 3. Aba Usuarios
+  let sheetUsers = ss.getSheetByName('Usuarios');
+  if (!sheetUsers) {
+    sheetUsers = ss.insertSheet('Usuarios');
+    sheetUsers.appendRow(['Usuario', 'Senha', 'Nome_Completo', 'Perfil']);
+    sheetUsers.getRange('A1:D1').setFontWeight('bold').setBackground('#e2e8f0');
+    sheetUsers.setFrozenRows(1);
+    sheetUsers.appendRow(['admin', '1234', 'Administrador TI', 'Administrador']);
+    sheetUsers.appendRow(['tecnico', '1234', 'Técnico Laboratório', 'Operador']);
+  }
+
+  return ss;
+}
+
+function doGet(e) {
+  const ss = setupSheets();
+  const action = (e && e.parameter && e.parameter.action) ? e.parameter.action : '';
+
+  if (action === 'getAll') {
+    return jsonResponse({
+      ok: true,
+      printers: mapPrintersFromSheet(ss.getSheetByName('Estoque_Impressoras')),
+      history: mapHistoryFromSheet(ss.getSheetByName('Historico_Movimentacoes')),
+      users: getSheetObjects(ss.getSheetByName('Usuarios')).map(u => ({
+        username: u.Usuario, fullName: u.Nome_Completo, role: u.Perfil
+      }))
+    });
+  }
+
+  return jsonResponse({ ok: true, message: 'PrintBackup Pro API ativa!' });
+}
+
+function doPost(e) {
+  try {
+    const ss = setupSheets();
+    const payload = JSON.parse(e.postData.contents);
+    const action = payload.action;
+
+    if (action === 'login') {
+      const users = getSheetObjects(ss.getSheetByName('Usuarios'));
+      const found = users.find(u =>
+        String(u.Usuario).toLowerCase() === String(payload.username).toLowerCase() &&
+        String(u.Senha) === String(payload.password)
+      );
+      if (!found) return jsonResponse({ ok: false, error: 'Usuário ou senha inválidos.' });
+      return jsonResponse({
+        ok: true,
+        user: { username: found.Usuario, fullName: found.Nome_Completo, role: found.Perfil }
+      });
+    }
+
+    if (action === 'getAll') {
+      return jsonResponse({
+        ok: true,
+        printers: mapPrintersFromSheet(ss.getSheetByName('Estoque_Impressoras')),
+        history: mapHistoryFromSheet(ss.getSheetByName('Historico_Movimentacoes')),
+        users: getSheetObjects(ss.getSheetByName('Usuarios')).map(u => ({
+          username: u.Usuario, fullName: u.Nome_Completo, role: u.Perfil
+        }))
+      });
+    }
+
+    if (action === 'savePrinter') {
+      const sheet = ss.getSheetByName('Estoque_Impressoras');
+      const p = payload.printer;
+      const rows = sheet.getDataRange().getValues();
+      let rowIndex = -1;
+      for (let i = 1; i < rows.length; i++) {
+        if (String(rows[i][0]) === String(p.id)) { rowIndex = i + 1; break; }
+      }
+      const rowData = [p.id, p.modelo, p.serial, p.status, p.localizacao, p.dataEntrada, p.movimentacoes, p.observacoes];
+      if (rowIndex > 0) {
+        sheet.getRange(rowIndex, 1, 1, 8).setValues([rowData]);
+      } else {
+        sheet.appendRow(rowData);
+        if (payload.historyEntry) {
+          appendHistoryRow(ss.getSheetByName('Historico_Movimentacoes'), payload.historyEntry);
+        }
+      }
+      return jsonResponse({ ok: true });
+    }
+
+    if (action === 'movePrinter') {
+      const sheet = ss.getSheetByName('Estoque_Impressoras');
+      const p = payload.printer;
+      const rows = sheet.getDataRange().getValues();
+      for (let i = 1; i < rows.length; i++) {
+        if (String(rows[i][0]) === String(p.id)) {
+          sheet.getRange(i + 1, 1, 1, 8).setValues([[
+            p.id, p.modelo, p.serial, p.status, p.localizacao, p.dataEntrada, p.movimentacoes, p.observacoes
+          ]]);
+          break;
+        }
+      }
+      if (payload.historyEntry) {
+        appendHistoryRow(ss.getSheetByName('Historico_Movimentacoes'), payload.historyEntry);
+      }
+      return jsonResponse({ ok: true });
+    }
+
+    if (action === 'deletePrinter') {
+      const sheet = ss.getSheetByName('Estoque_Impressoras');
+      const rows = sheet.getDataRange().getValues();
+      for (let i = 1; i < rows.length; i++) {
+        if (String(rows[i][0]) === String(payload.id)) {
+          sheet.deleteRow(i + 1);
+          break;
+        }
+      }
+      return jsonResponse({ ok: true });
+    }
+
+    if (action === 'saveUser') {
+      const sheet = ss.getSheetByName('Usuarios');
+      const u = payload.user;
+      sheet.appendRow([u.username, u.password, u.fullName, u.role]);
+      return jsonResponse({ ok: true });
+    }
+
+    if (action === 'deleteUser') {
+      const sheet = ss.getSheetByName('Usuarios');
+      const rows = sheet.getDataRange().getValues();
+      for (let i = 1; i < rows.length; i++) {
+        if (String(rows[i][0]).toLowerCase() === String(payload.username).toLowerCase()) {
+          sheet.deleteRow(i + 1);
+          break;
+        }
+      }
+      return jsonResponse({ ok: true });
+    }
+
+    return jsonResponse({ ok: false, error: 'Ação desconhecida.' });
+  } catch (err) {
+    return jsonResponse({ ok: false, error: err.toString() });
+  }
+}
+
+function appendHistoryRow(sheet, h) {
+  sheet.appendRow([
+    h.id, h.timestamp, h.printerId, h.modelo, h.serial,
+    h.statusAnterior, h.statusNovo, h.localAnterior, h.localNovo,
+    h.responsavel, h.observacao
+  ]);
+}
+
+function getSheetObjects(sheet) {
+  const data = sheet.getDataRange().getValues();
+  if (data.length <= 1) return [];
+  const headers = data[0];
+  return data.slice(1).map(row => {
+    const obj = {};
+    headers.forEach((h, idx) => obj[h] = row[idx]);
+    return obj;
+  });
+}
+
+function mapPrintersFromSheet(sheet) {
+  return getSheetObjects(sheet).map(r => ({
+    id: String(r.ID),
+    modelo: String(r.Modelo),
+    serial: String(r.Serial),
+    status: String(r.Status_Atual),
+    localizacao: String(r.Localizacao_Atual),
+    dataEntrada: r.Data_Entrada instanceof Date ? Utilities.formatDate(r.Data_Entrada, Session.getScriptTimeZone(), 'yyyy-MM-dd') : String(r.Data_Entrada),
+    movimentacoes: Number(r.Contador_Movimentacoes || 0),
+    observacoes: String(r.Observacoes || '')
+  })).reverse();
+}
+
+function mapHistoryFromSheet(sheet) {
+  return getSheetObjects(sheet).map(r => ({
+    id: String(r.ID),
+    timestamp: String(r.Data_Hora),
+    printerId: String(r.Printer_ID),
+    modelo: String(r.Modelo),
+    serial: String(r.Serial),
+    statusAnterior: String(r.Status_Anterior),
+    statusNovo: String(r.Status_Novo),
+    localAnterior: String(r.Local_Anterior),
+    localNovo: String(r.Local_Novo),
+    responsavel: String(r.Usuario_Responsavel),
+    observacao: String(r.Observacao)
+  })).reverse();
+}
+
+function jsonResponse(obj) {
+  return ContentService.createTextOutput(JSON.stringify(obj)).setMimeType(ContentService.MimeType.JSON);
+}`;
+
+    // ==================== ESTADO GLOBAL ====================
+    const STORAGE_KEYS = {
+      PRINTERS: 'pbpro_printers_v4',
+      HISTORY: 'pbpro_history_v4',
+      USERS: 'pbpro_users_v4',
+      SESSION: 'pbpro_session_v4',
+      SHEETS_URL: 'pbpro_sheets_url_v4'
+    };
+
+    let printers = [];
+    let historyLogs = [];
+    let usersList = [];
+    let currentUser = null;
+    let sheetsApiUrl = '';
+    let currentStatusFilter = 'ALL';
+    let statusChartInstance = null;
+    let modelChartInstance = null;
+
+    const defaultUsers = [
+      { username: 'admin', password: '1234', fullName: 'Administrador TI', role: 'Administrador' },
+      { username: 'tecnico', password: '1234', fullName: 'Técnico Laboratório', role: 'Operador' }
+    ];
+
+    const defaultPrinters = [
+      {
+        id: 'PRN-001',
+        modelo: 'HP LaserJet Pro M404dn',
+        serial: 'BRBSN40411',
+        status: 'Disponível no Estoque',
+        localizacao: 'Estoque TI - Prateleira A1',
+        dataEntrada: '2026-08-12',
+        movimentacoes: 2,
+        observacoes: 'Testada e higienizada. Toner 85%.'
+      },
+      {
+        id: 'PRN-002',
+        modelo: 'Brother HL-L6402DW',
+        serial: 'U64219H9N102',
+        status: 'Disponível no Estoque',
+        localizacao: 'Estoque TI - Prateleira A2',
+        dataEntrada: '2026-09-05',
+        movimentacoes: 0,
+        observacoes: 'Reserva estratégica de alta capacidade.'
+      },
+      {
+        id: 'PRN-003',
+        modelo: 'Kyocera ECOSYS M2040dn',
+        serial: 'V7Y9302841',
+        status: 'Em Uso (Backup)',
+        localizacao: 'Setor Financeiro',
+        dataEntrada: '2026-06-20',
+        movimentacoes: 3,
+        observacoes: 'Substituindo multifuncional titular.'
+      },
+      {
+        id: 'PRN-004',
+        modelo: 'HP LaserJet Pro M404dn',
+        serial: 'BRBSN40488',
+        status: 'Em Uso (Backup)',
+        localizacao: 'Recepção Ambulatório',
+        dataEntrada: '2026-07-14',
+        movimentacoes: 1,
+        observacoes: 'Alocada para impressão de guias.'
+      },
+      {
+        id: 'PRN-005',
+        modelo: 'Brother DCP-L5652DN',
+        serial: 'E75821M2J550',
+        status: 'Em Manutenção',
+        localizacao: 'Assistência Técnica Autorizada',
+        dataEntrada: '2026-05-10',
+        movimentacoes: 4,
+        observacoes: 'Troca do conjunto fusor.'
+      },
+      {
+        id: 'PRN-006',
+        modelo: 'Samsung ProXpress M4020ND',
+        serial: 'Z8D1B8GF40019',
+        status: 'Descartada / Baixada',
+        localizacao: 'Sala de Descarte TI',
+        dataEntrada: '2024-03-15',
+        movimentacoes: 5,
+        observacoes: 'Placa lógica queimada. Baixa patrimonial.'
+      }
+    ];
+
+    const defaultHistory = [
+      {
+        id: 'MOV-1003',
+        timestamp: '2026-11-14T14:35:00',
+        printerId: 'PRN-003',
+        modelo: 'Kyocera ECOSYS M2040dn',
+        serial: 'V7Y9302841',
+        statusAnterior: 'Disponível no Estoque',
+        statusNovo: 'Em Uso (Backup)',
+        localAnterior: 'Estoque TI - Prateleira A2',
+        localNovo: 'Setor Financeiro',
+        responsavel: 'Técnico Laboratório',
+        observacao: 'Chamado #4021 - Impressora titular com falha de rede.'
+      },
+      {
+        id: 'MOV-1002',
+        timestamp: '2026-11-10T09:15:00',
+        printerId: 'PRN-005',
+        modelo: 'Brother DCP-L5652DN',
+        serial: 'E75821M2J550',
+        statusAnterior: 'Disponível no Estoque',
+        statusNovo: 'Em Manutenção',
+        localAnterior: 'Estoque TI - Prateleira B2',
+        localNovo: 'Assistência Técnica Autorizada',
+        responsavel: 'Administrador TI',
+        observacao: 'OS #912 - Atolamento recorrente na bandeja 1.'
+      },
+      {
+        id: 'MOV-1001',
+        timestamp: '2026-11-04T16:20:00',
+        printerId: 'PRN-001',
+        modelo: 'HP LaserJet Pro M404dn',
+        serial: 'BRBSN40411',
+        statusAnterior: 'Em Uso (Backup)',
+        statusNovo: 'Disponível no Estoque',
+        localAnterior: 'Recursos Humanos',
+        localNovo: 'Estoque TI - Prateleira A1',
+        responsavel: 'Técnico Laboratório',
+        observacao: 'Devolvida ao estoque após retorno da titular.'
+      }
+    ];
+
+    // ==================== INICIALIZAÇÃO ====================
+    document.addEventListener('DOMContentLoaded', () => {
+      document.getElementById('apps-script-code').value = GOOGLE_APPS_SCRIPT_TEMPLATE;
+      sheetsApiUrl = localStorage.getItem(STORAGE_KEYS.SHEETS_URL) || '';
+      updateConnectionIndicators();
+
+      loadLocalData();
+
+      const savedSession = sessionStorage.getItem(STORAGE_KEYS.SESSION);
+      if (savedSession) {
+        currentUser = JSON.parse(savedSession);
+        enterApplication();
+      }
+    });
+
+    function loadLocalData() {
+      const sPrinters = localStorage.getItem(STORAGE_KEYS.PRINTERS);
+      const sHistory = localStorage.getItem(STORAGE_KEYS.HISTORY);
+      const sUsers = localStorage.getItem(STORAGE_KEYS.USERS);
+
+      printers = sPrinters ? JSON.parse(sPrinters) : JSON.parse(JSON.stringify(defaultPrinters));
+      historyLogs = sHistory ? JSON.parse(sHistory) : JSON.parse(JSON.stringify(defaultHistory));
+      usersList = sUsers ? JSON.parse(sUsers) : JSON.parse(JSON.stringify(defaultUsers));
+
+      if (!sPrinters || !sHistory || !sUsers) {
+        saveLocalData();
+      }
+    }
+
+    function saveLocalData() {
+      localStorage.setItem(STORAGE_KEYS.PRINTERS, JSON.stringify(printers));
+      localStorage.setItem(STORAGE_KEYS.HISTORY, JSON.stringify(historyLogs));
+      localStorage.setItem(STORAGE_KEYS.USERS, JSON.stringify(usersList));
+    }
+
+    // ==================== COMUNICAÇÃO GOOGLE SHEETS ====================
+    async function callSheetsApi(payload) {
+      if (!sheetsApiUrl) return null;
+      const response = await fetch(sheetsApiUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+        body: JSON.stringify(payload)
+      });
+      return await response.json();
+    }
+
+    async function syncWithGoogleSheets() {
+      if (!sheetsApiUrl) return;
+      const btn = document.getElementById('btn-sync');
+      if (btn) {
+        btn.disabled = true;
+        btn.innerHTML = `<i class="ph-bold ph-spinner animate-spin text-base"></i><span>Sincronizando...</span>`;
+      }
+
+      try {
+        const res = await callSheetsApi({ action: 'getAll' });
+        if (res && res.ok) {
+          printers = res.printers || [];
+          historyLogs = res.history || [];
+          if (res.users) usersList = res.users;
+          refreshAll();
+          showToast('Sincronizado com o Google Planilhas!');
+        } else {
+          showToast('Erro ao sincronizar com a planilha.');
+        }
+      } catch (err) {
+        showToast('Falha de conexão com o Google Planilhas.');
+      } finally {
+        if (btn) {
+          btn.disabled = false;
+          btn.innerHTML = `<i class="ph-bold ph-arrows-clockwise text-base"></i><span>Sincronizar</span>`;
+        }
+      }
+    }
+
+    function openSheetsConfigModal() {
+      document.getElementById('sheets-url-input').value = sheetsApiUrl;
+      document.getElementById('sheets-modal').classList.remove('hidden');
+    }
+
+    function closeSheetsConfigModal() {
+      document.getElementById('sheets-modal').classList.add('hidden');
+    }
+
+    function saveSheetsUrl() {
+      const url = document.getElementById('sheets-url-input').value.trim();
+      if (!url) {
+        disconnectSheets();
+        return;
+      }
+      sheetsApiUrl = url;
+      localStorage.setItem(STORAGE_KEYS.SHEETS_URL, url);
+      updateConnectionIndicators();
+      closeSheetsConfigModal();
+      showToast('URL do Google Planilhas salva!');
+      if (currentUser) syncWithGoogleSheets();
+    }
+
+    function disconnectSheets() {
+      sheetsApiUrl = '';
+      localStorage.removeItem(STORAGE_KEYS.SHEETS_URL);
+      document.getElementById('sheets-url-input').value = '';
+      updateConnectionIndicators();
+      closeSheetsConfigModal();
+      showToast('Modo Demonstração Local ativado.');
+    }
+
+    function updateConnectionIndicators() {
+      const loginBadge = document.getElementById('login-connection-badge');
+      const headerIndicator = document.getElementById('header-db-indicator');
+      const syncBtn = document.getElementById('btn-sync');
+      const headerSyncBtn = document.getElementById('btn-header-sync');
+      const quickLoginBox = document.getElementById('quick-login-box');
+
+      if (sheetsApiUrl) {
+        loginBadge.className = 'mt-4 inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200';
+        loginBadge.innerHTML = `<span class="w-2 h-2 rounded-full bg-emerald-500"></span><span>Conectado ao Google Planilhas</span>`;
+
+        headerIndicator.className = 'hidden sm:inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200';
+        headerIndicator.innerHTML = `<span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>Google Sheets`;
+
+        syncBtn.classList.remove('hidden');
+        headerSyncBtn.classList.remove('hidden');
+        quickLoginBox.classList.add('hidden');
+      } else {
+        loginBadge.className = 'mt-4 inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-semibold bg-amber-50 text-amber-800 border border-amber-200';
+        loginBadge.innerHTML = `<span class="w-2 h-2 rounded-full bg-amber-500"></span><span>Modo Demonstração (Local)</span>`;
+
+        headerIndicator.className = 'hidden sm:inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-50 text-amber-700 border border-amber-200';
+        headerIndicator.innerHTML = `<span class="w-1.5 h-1.5 rounded-full bg-amber-500"></span>Modo Local`;
+
+        syncBtn.classList.add('hidden');
+        headerSyncBtn.classList.add('hidden');
+        quickLoginBox.classList.remove('hidden');
+      }
+    }
+
+    function copyAppsScriptCode() {
+      const textarea = document.getElementById('apps-script-code');
+      textarea.select();
+      document.execCommand('copy');
+      showToast('Código Apps Script copiado!');
+    }
+
+    // ==================== AUTENTICAÇÃO E SESSÃO ====================
+    function fillDemoLogin(user, pass) {
+      document.getElementById('login-username').value = user;
+      document.getElementById('login-password').value = pass;
+    }
+
+    async function handleLogin(event) {
+      event.preventDefault();
+      const username = document.getElementById('login-username').value.trim();
+      const password = document.getElementById('login-password').value.trim();
+      const errorBox = document.getElementById('login-error');
+      const errorText = document.getElementById('login-error-text');
+      const submitBtn = document.getElementById('btn-login-submit');
+
+      errorBox.classList.add('hidden');
+      submitBtn.disabled = true;
+      submitBtn.innerHTML = `<i class="ph-bold ph-spinner animate-spin text-lg"></i><span>Entrando...</span>`;
+
+      try {
+        if (sheetsApiUrl) {
+          const res = await callSheetsApi({ action: 'login', username, password });
+          if (res && res.ok && res.user) {
+            currentUser = res.user;
+            sessionStorage.setItem(STORAGE_KEYS.SESSION, JSON.stringify(currentUser));
+            enterApplication();
+            await syncWithGoogleSheets();
+          } else {
+            errorText.textContent = (res && res.error) ? res.error : 'Usuário ou senha inválidos na planilha.';
+            errorBox.classList.remove('hidden');
+          }
+        } else {
+          const found = usersList.find(
+            u => u.username.toLowerCase() === username.toLowerCase() && u.password === password
+          );
+          if (found) {
+            currentUser = { username: found.username, fullName: found.fullName, role: found.role };
+            sessionStorage.setItem(STORAGE_KEYS.SESSION, JSON.stringify(currentUser));
+            enterApplication();
+          } else {
+            errorText.textContent = 'Usuário ou senha inválidos.';
+            errorBox.classList.remove('hidden');
+          }
+        }
+      } catch (err) {
+        errorText.textContent = 'Erro ao conectar com a planilha. Verifique a URL configurada.';
+        errorBox.classList.remove('hidden');
+      } finally {
+        submitBtn.disabled = false;
+        submitBtn.innerHTML = `<span>Entrar no Sistema</span><i class="ph-bold ph-arrow-right"></i>`;
+      }
+    }
+
+    function enterApplication() {
+      document.getElementById('login-screen').classList.add('hidden');
+      document.getElementById('app-shell').classList.remove('hidden');
+
+      document.getElementById('header-user-name').textContent = currentUser.fullName;
+      document.getElementById('header-user-avatar').textContent = currentUser.fullName.charAt(0).toUpperCase();
+      const roleBadge = document.getElementById('header-user-role');
+      roleBadge.textContent = currentUser.role;
+
+      const isAdmin = currentUser.role === 'Administrador';
+      if (isAdmin) {
+        roleBadge.className = 'inline-block text-[10px] font-bold px-1.5 py-0.2 rounded bg-brand-50 text-brand-700';
+        document.getElementById('nav-usuarios').classList.remove('hidden');
+        document.getElementById('mob-usuarios').classList.remove('hidden');
+      } else {
+        roleBadge.className = 'inline-block text-[10px] font-bold px-1.5 py-0.2 rounded bg-slate-100 text-slate-600';
+        document.getElementById('nav-usuarios').classList.add('hidden');
+        document.getElementById('mob-usuarios').classList.add('hidden');
+      }
+
+      switchTab('dashboard');
+      refreshAll();
+    }
+
+    function logout() {
+      currentUser = null;
+      sessionStorage.removeItem(STORAGE_KEYS.SESSION);
+      document.getElementById('login-password').value = '';
+      document.getElementById('app-shell').classList.add('hidden');
+      document.getElementById('login-screen').classList.remove('hidden');
+    }
+
+    function refreshAll() {
+      updateKPIs();
+      renderInventory();
+      renderDashboardCharts();
+      renderDashboardRecentMovements();
+      renderHistory();
+      renderUsers();
+    }
+
+    // ==================== BADGES DE STATUS ====================
+    function getStatusBadgeHTML(status, size = 'sm') {
+      const padding = size === 'xs' ? 'px-2.5 py-0.5 text-[11px]' : 'px-3 py-1 text-xs';
+      switch (status) {
+        case 'Disponível no Estoque':
+          return `<span class="inline-flex items-center gap-1.5 ${padding} rounded-full font-bold bg-emerald-50 text-emerald-700 border border-emerald-200 whitespace-nowrap">
+                    <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
+                    Disponível no Estoque
+                  </span>`;
+        case 'Em Uso (Backup)':
+          return `<span class="inline-flex items-center gap-1.5 ${padding} rounded-full font-bold bg-amber-50 text-amber-800 border border-amber-200 whitespace-nowrap">
+                    <span class="w-2 h-2 rounded-full bg-amber-400"></span>
+                    Em Uso (Backup)
+                  </span>`;
+        case 'Em Manutenção':
+          return `<span class="inline-flex items-center gap-1.5 ${padding} rounded-full font-bold bg-rose-50 text-rose-700 border border-rose-200 whitespace-nowrap">
+                    <span class="w-2 h-2 rounded-full bg-rose-500"></span>
+                    Em Manutenção
+                  </span>`;
+        case 'Descartada / Baixada':
+        default:
+          return `<span class="inline-flex items-center gap-1.5 ${padding} rounded-full font-bold bg-slate-100 text-slate-600 border border-slate-200 whitespace-nowrap">
+                    <span class="w-2 h-2 rounded-full bg-slate-400"></span>
+                    Descartada / Baixada
+                  </span>`;
+      }
+    }
+
+    // ==================== NAVEGAÇÃO ENTRE ABAS ====================
+    function switchTab(tabName) {
+      ['dashboard', 'inventario', 'historico', 'usuarios'].forEach(t => {
+        document.getElementById(`tab-${t}`).classList.add('hidden');
+
+        const navBtn = document.getElementById(`nav-${t}`);
+        navBtn.classList.remove('bg-white', 'text-brand-600', 'shadow-xs', 'font-bold');
+        navBtn.classList.add('text-slate-600', 'font-medium');
+
+        const mobBtn = document.getElementById(`mob-${t}`);
+        mobBtn.classList.remove('bg-brand-50', 'text-brand-600', 'font-bold');
+        mobBtn.classList.add('text-slate-600', 'font-medium');
+      });
+
+      document.getElementById(`tab-${tabName}`).classList.remove('hidden');
+
+      const activeNav = document.getElementById(`nav-${tabName}`);
+      activeNav.classList.add('bg-white', 'text-brand-600', 'shadow-xs', 'font-bold');
+      activeNav.classList.remove('text-slate-600', 'font-medium');
+
+      const activeMob = document.getElementById(`mob-${tabName}`);
+      activeMob.classList.add('bg-brand-50', 'text-brand-600', 'font-bold');
+      activeMob.classList.remove('text-slate-600', 'font-medium');
+
+      if (tabName === 'dashboard') {
+        renderDashboardCharts();
+      }
+    }
+
+    function filterFromDashboard(status) {
+      switchTab('inventario');
+      setStatusFilter(status);
+    }
+
+    // ==================== KPIs E GRÁFICOS ====================
+    function updateKPIs() {
+      const total = printers.length;
+      const disp = printers.filter(p => p.status === 'Disponível no Estoque').length;
+      const uso = printers.filter(p => p.status === 'Em Uso (Backup)').length;
+      const manut = printers.filter(p => p.status === 'Em Manutenção').length;
+      const desc = printers.filter(p => p.status === 'Descartada / Baixada').length;
+
+      const activePool = total - desc;
+      const availRate = activePool > 0 ? Math.round((disp / activePool) * 100) : 0;
+
+      document.getElementById('kpi-total').textContent = total;
+      document.getElementById('kpi-availability').textContent = `${availRate}% disp.`;
+      document.getElementById('kpi-disponivel').textContent = disp;
+      document.getElementById('kpi-emuso').textContent = uso;
+      document.getElementById('kpi-manutencao').textContent = manut;
+      document.getElementById('kpi-descartada').textContent = desc;
+
+      document.getElementById('badge-total-nav').textContent = total;
+    }
+
+    function renderDashboardCharts() {
+      const disp = printers.filter(p => p.status === 'Disponível no Estoque').length;
+      const uso = printers.filter(p => p.status === 'Em Uso (Backup)').length;
+      const manut = printers.filter(p => p.status === 'Em Manutenção').length;
+      const desc = printers.filter(p => p.status === 'Descartada / Baixada').length;
+
+      // Legenda Vertical à Esquerda com Quantidade ao Lado
+      const legendItems = [
+        { label: 'Disponível no Estoque', count: disp, color: 'bg-emerald-500', bg: 'bg-emerald-50/70', text: 'text-emerald-900', badge: 'bg-emerald-100 text-emerald-800' },
+        { label: 'Em Uso (Backup)', count: uso, color: 'bg-amber-400', bg: 'bg-amber-50/70', text: 'text-amber-900', badge: 'bg-amber-100 text-amber-800' },
+        { label: 'Em Manutenção', count: manut, color: 'bg-rose-500', bg: 'bg-rose-50/70', text: 'text-rose-900', badge: 'bg-rose-100 text-rose-800' },
+        { label: 'Descartada / Baixada', count: desc, color: 'bg-slate-400', bg: 'bg-slate-100/80', text: 'text-slate-700', badge: 'bg-slate-200 text-slate-800' }
+      ];
+
+      document.getElementById('status-custom-legend').innerHTML = legendItems.map(item => `
+        <div onclick="filterFromDashboard('${item.label}')" class="cursor-pointer flex items-center justify-between px-3.5 py-2.5 rounded-xl ${item.bg} hover:opacity-85 transition">
+          <div class="flex items-center gap-2.5">
+            <span class="w-3 h-3 rounded-full ${item.color} shrink-0"></span>
+            <span class="text-xs font-bold ${item.text}">${item.label}</span>
+          </div>
+          <span class="text-sm font-black px-2.5 py-0.5 rounded-lg ${item.badge}">${item.count}</span>
+        </div>
+      `).join('');
+
+      const ctxStatus = document.getElementById('statusChart').getContext('2d');
+      if (statusChartInstance) statusChartInstance.destroy();
+
+      statusChartInstance = new Chart(ctxStatus, {
+        type: 'doughnut',
+        data: {
+          labels: ['Disponível no Estoque', 'Em Uso (Backup)', 'Em Manutenção', 'Descartada / Baixada'],
+          datasets: [{
+            data: [disp, uso, manut, desc],
+            backgroundColor: ['#10b981', '#fbbf24', '#f43f5e', '#94a3b8'],
+            borderWidth: 2,
+            borderColor: '#ffffff'
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          cutout: '62%',
+          plugins: {
+            legend: { display: false },
+            datalabels: { display: false }
+          }
+        }
+      });
+
+      // Gráfico de Barras Horizontais com Quantidade Visível na Ponta da Barra
+      const modelCounts = {};
+      printers.forEach(p => {
+        modelCounts[p.modelo] = (modelCounts[p.modelo] || 0) + 1;
+      });
+      const sortedModels = Object.entries(modelCounts).sort((a, b) => b[1] - a[1]);
+      const maxVal = sortedModels.length > 0 ? Math.max(...sortedModels.map(m => m[1])) : 5;
+
+      const ctxModel = document.getElementById('modelChart').getContext('2d');
+      if (modelChartInstance) modelChartInstance.destroy();
+
+      modelChartInstance = new Chart(ctxModel, {
+        type: 'bar',
+        data: {
+          labels: sortedModels.map(m => m[0]),
+          datasets: [{
+            label: 'Unidades',
+            data: sortedModels.map(m => m[1]),
+            backgroundColor: '#2563eb',
+            borderRadius: 8,
+            maxBarThickness: 32
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          indexAxis: 'y',
+          layout: {
+            padding: { right: 32 }
+          },
+          plugins: {
+            legend: { display: false },
+            datalabels: {
+              display: true,
+              anchor: 'end',
+              align: 'right',
+              offset: 6,
+              color: '#0f172a',
+              font: {
+                family: 'Inter',
+                weight: '800',
+                size: 13
+              },
+              formatter: (value) => value
+            }
+          },
+          scales: {
+            x: {
+              beginAtZero: true,
+              suggestedMax: maxVal + 1,
+              ticks: { stepSize: 1 },
+              grid: { color: '#f1f5f9' }
+            },
+            y: {
+              grid: { display: false },
+              ticks: {
+                font: { family: 'Inter', weight: '600', size: 12 },
+                color: '#334155'
+              }
+            }
+          }
+        }
+      });
+    }
+
+    // ==================== CARTÃO DE HISTÓRICO LIMPO (REUTILIZÁVEL) ====================
+    function buildHistoryCardHTML(h) {
+      return `
+        <div class="bg-white p-4 sm:p-5 rounded-2xl border border-slate-200 shadow-2xs hover:border-slate-300 transition flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+          <div class="flex items-start gap-3.5">
+            <div class="w-10 h-10 rounded-xl bg-brand-50 text-brand-600 flex items-center justify-center shrink-0 mt-0.5">
+              <i class="ph-bold ph-arrows-left-right text-lg"></i>
+            </div>
+            <div class="space-y-2">
+              <div class="flex items-center gap-2 flex-wrap">
+                <span class="text-sm font-extrabold text-slate-900">${escapeHTML(h.modelo)}</span>
+                <span class="text-xs font-mono font-bold bg-slate-100 text-slate-700 px-2 py-0.5 rounded border border-slate-200">SN: ${escapeHTML(h.serial)}</span>
+              </div>
+
+              <!-- Linha De -> Para limpa e direta -->
+              <div class="flex flex-wrap items-center gap-2 text-xs">
+                <div class="inline-flex items-center gap-1.5 bg-slate-50 border border-slate-200 px-2.5 py-1 rounded-lg text-slate-600">
+                  <span class="font-extrabold uppercase text-[10px] text-slate-400">De:</span>
+                  <span class="font-semibold">${escapeHTML(h.statusAnterior)}</span>
+                  <span class="text-slate-400">(${escapeHTML(h.localAnterior)})</span>
+                </div>
+
+                <i class="ph-bold ph-arrow-right text-slate-400"></i>
+
+                <div class="inline-flex items-center gap-1.5 flex-wrap">
+                  <span class="font-extrabold uppercase text-[10px] text-brand-600">Para:</span>
+                  ${getStatusBadgeHTML(h.statusNovo, 'xs')}
+                  <span class="font-bold text-slate-800">(${escapeHTML(h.localNovo)})</span>
+                </div>
+              </div>
+
+              ${h.observacao ? `
+                <p class="text-xs text-slate-500">
+                  <i class="ph-bold ph-chat-text text-slate-400 mr-1"></i>${escapeHTML(h.observacao)}
+                </p>
+              ` : ''}
+            </div>
+          </div>
+
+          <div class="flex lg:flex-col items-center lg:items-end justify-between lg:justify-center gap-1 pt-2 lg:pt-0 border-t lg:border-t-0 border-slate-100 shrink-0 text-right">
+            <span class="text-xs font-semibold text-slate-400">${formatDateTime(h.timestamp)}</span>
+            <span class="text-xs font-bold text-slate-700 bg-slate-100 px-2.5 py-0.5 rounded-full">
+              <i class="ph-bold ph-user text-slate-500 mr-1"></i>${escapeHTML(h.responsavel)}
+            </span>
+          </div>
+        </div>
+      `;
+    }
+
+    function renderDashboardRecentMovements() {
+      const container = document.getElementById('dashboard-recent-movements');
+      const recent = historyLogs.slice(0, 4);
+
+      if (recent.length === 0) {
+        container.innerHTML = `<div class="bg-white rounded-2xl border border-slate-200 p-8 text-center text-sm text-slate-400">Nenhuma movimentação registrada ainda.</div>`;
+        return;
+      }
+
+      container.innerHTML = recent.map(h => buildHistoryCardHTML(h)).join('');
+    }
+
+    // ==================== CONTROLE DE ESTOQUE (LISTAGEM POR LINHAS) ====================
+    function setStatusFilter(status) {
+      currentStatusFilter = status;
+      document.getElementById('select-status-filter').value = status;
+
+      document.querySelectorAll('.filter-pill').forEach(btn => {
+        btn.classList.remove('bg-slate-900', 'text-white');
+        btn.classList.add('bg-white', 'border', 'border-slate-200');
+      });
+      const activePill = document.getElementById(`pill-${status}`);
+      if (activePill) {
+        activePill.classList.remove('bg-white', 'border', 'border-slate-200');
+        activePill.classList.add('bg-slate-900', 'text-white');
+      }
+
+      renderInventory();
+    }
+
+    function renderInventory() {
+      const query = document.getElementById('search-inventory').value.trim().toLowerCase();
+      const isAdmin = currentUser && currentUser.role === 'Administrador';
+
+      const filtered = printers.filter(p => {
+        const matchesStatus = currentStatusFilter === 'ALL' || p.status === currentStatusFilter;
+        const matchesQuery = !query ||
+          p.modelo.toLowerCase().includes(query) ||
+          p.serial.toLowerCase().includes(query) ||
+          p.localizacao.toLowerCase().includes(query) ||
+          (p.observacoes && p.observacoes.toLowerCase().includes(query));
+        return matchesStatus && matchesQuery;
+      });
+
+      const tbody = document.getElementById('inventory-table-body');
+      const emptyState = document.getElementById('inventory-empty');
+
+      if (filtered.length === 0) {
+        tbody.innerHTML = '';
+        emptyState.classList.remove('hidden');
+        return;
+      }
+
+      emptyState.classList.add('hidden');
+
+      tbody.innerHTML = filtered.map(p => `
+        <tr class="hover:bg-slate-50/90 transition">
+          <td class="py-4 px-5">
+            <div class="font-bold text-slate-900 text-sm">${escapeHTML(p.modelo)}</div>
+            <div class="mt-1">
+              <span class="font-mono text-xs font-bold bg-slate-100 text-slate-700 px-2 py-0.5 rounded border border-slate-200">SN: ${escapeHTML(p.serial)}</span>
+            </div>
+          </td>
+          <td class="py-4 px-5 whitespace-nowrap">
+            ${getStatusBadgeHTML(p.status)}
+          </td>
+          <td class="py-4 px-5 text-slate-800 font-semibold">
+            <div class="flex items-center gap-1.5">
+              <i class="ph-fill ph-map-pin text-brand-500 shrink-0"></i>
+              <span>${escapeHTML(p.localizacao)}</span>
+            </div>
+          </td>
+          <td class="py-4 px-5 text-center text-slate-500 text-xs font-medium whitespace-nowrap">
+            ${formatDateBR(p.dataEntrada)}
+          </td>
+          <td class="py-4 px-5 text-center">
+            <span class="inline-flex items-center justify-center min-w-[30px] h-7 px-2 rounded-lg bg-slate-100 text-slate-800 font-extrabold text-xs border border-slate-200">
+              ${p.movimentacoes}
+            </span>
+          </td>
+          <td class="py-4 px-5 max-w-xs">
+            <p class="text-xs text-slate-500 line-clamp-2" title="${escapeHTML(p.observacoes || '')}">
+              ${p.observacoes ? escapeHTML(p.observacoes) : '<span class="italic text-slate-300">-</span>'}
+            </p>
+          </td>
+          <td class="py-4 px-5 text-right whitespace-nowrap">
+            <div class="inline-flex items-center gap-2">
+              <button onclick="openMoveModal('${p.id}')" class="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold bg-brand-600 text-white hover:bg-brand-700 shadow-xs transition" title="Registrar Movimentação">
+                <i class="ph-bold ph-arrows-left-right text-sm"></i>
+                Movimentar
+              </button>
+              <button onclick="openEditPrinterModal('${p.id}')" class="p-2 rounded-xl text-slate-500 hover:text-slate-900 hover:bg-slate-100 border border-transparent hover:border-slate-200 transition" title="Editar Cadastro">
+                <i class="ph-bold ph-pencil-simple text-base"></i>
+              </button>
+              ${isAdmin ? `
+                <button onclick="confirmDeletePrinter('${p.id}')" class="p-2 rounded-xl text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition" title="Excluir Impressora">
+                  <i class="ph-bold ph-trash text-base"></i>
+                </button>
+              ` : ''}
+            </div>
+          </td>
+        </tr>
+      `).join('');
+    }
+
+    // ==================== CADASTRO E EDIÇÃO ====================
+    function openNewPrinterModal() {
+      document.getElementById('printer-modal-title').textContent = 'Cadastrar Nova Impressora Backup';
+      document.getElementById('edit-printer-id').value = '';
+      document.getElementById('printer-form').reset();
+      document.getElementById('field-data-entrada').value = new Date().toISOString().split('T')[0];
+      document.getElementById('field-localizacao').value = 'Estoque TI - Prateleira A1';
+      document.getElementById('printer-form-error').classList.add('hidden');
+      document.getElementById('printer-modal').classList.remove('hidden');
+    }
+
+    function openEditPrinterModal(id) {
+      const printer = printers.find(p => p.id === id);
+      if (!printer) return;
+
+      document.getElementById('printer-modal-title').textContent = 'Editar Dados da Impressora';
+      document.getElementById('edit-printer-id').value = printer.id;
+      document.getElementById('field-modelo').value = printer.modelo;
+      document.getElementById('field-serial').value = printer.serial;
+      document.getElementById('field-data-entrada').value = printer.dataEntrada;
+      document.getElementById('field-status').value = printer.status;
+      document.getElementById('field-localizacao').value = printer.localizacao;
+      document.getElementById('field-observacoes').value = printer.observacoes || '';
+      document.getElementById('printer-form-error').classList.add('hidden');
+      document.getElementById('printer-modal').classList.remove('hidden');
+    }
+
+    function closePrinterModal() {
+      document.getElementById('printer-modal').classList.add('hidden');
+    }
+
+    async function savePrinter(event) {
+      event.preventDefault();
+      const editId = document.getElementById('edit-printer-id').value;
+      const modelo = document.getElementById('field-modelo').value.trim();
+      const serial = document.getElementById('field-serial').value.trim().toUpperCase();
+      const dataEntrada = document.getElementById('field-data-entrada').value;
+      const status = document.getElementById('field-status').value;
+      const localizacao = document.getElementById('field-localizacao').value.trim();
+      const observacoes = document.getElementById('field-observacoes').value.trim();
+
+      const errorBox = document.getElementById('printer-form-error');
+      const duplicate = printers.find(p => p.serial.toUpperCase() === serial && p.id !== editId);
+      if (duplicate) {
+        errorBox.textContent = `Já existe uma impressora cadastrada com o Serial "${serial}".`;
+        errorBox.classList.remove('hidden');
+        return;
+      }
+
+      if (editId) {
+        const idx = printers.findIndex(p => p.id === editId);
+        if (idx !== -1) {
+          printers[idx] = { ...printers[idx], modelo, serial, dataEntrada, status, localizacao, observacoes };
+          saveLocalData();
+          refreshAll();
+          closePrinterModal();
+          showToast('Cadastro atualizado!');
+          if (sheetsApiUrl) callSheetsApi({ action: 'savePrinter', printer: printers[idx] });
+        }
+      } else {
+        const newPrinter = {
+          id: 'PRN-' + Date.now().toString().slice(-6),
+          modelo,
+          serial,
+          status,
+          localizacao,
+          dataEntrada,
+          movimentacoes: 0,
+          observacoes
+        };
+
+        const historyEntry = {
+          id: 'MOV-' + Date.now().toString().slice(-6),
+          timestamp: new Date().toISOString(),
+          printerId: newPrinter.id,
+          modelo: newPrinter.modelo,
+          serial: newPrinter.serial,
+          statusAnterior: 'Novo Cadastro',
+          statusNovo: newPrinter.status,
+          localAnterior: 'Entrada Inicial',
+          localNovo: newPrinter.localizacao,
+          responsavel: currentUser.fullName,
+          observacao: observacoes || 'Entrada inicial no inventário de backup.'
+        };
+
+        printers.unshift(newPrinter);
+        historyLogs.unshift(historyEntry);
+        saveLocalData();
+        refreshAll();
+        closePrinterModal();
+        showToast('Nova impressora cadastrada!');
+
+        if (sheetsApiUrl) {
+          callSheetsApi({ action: 'savePrinter', printer: newPrinter, historyEntry });
+        }
+      }
+    }
+
+    function confirmDeletePrinter(id) {
+      const printer = printers.find(p => p.id === id);
+      if (!printer) return;
+      document.getElementById('delete-modal-text').textContent =
+        `Deseja excluir permanentemente a impressora "${printer.modelo}" (Serial: ${printer.serial})?`;
+      document.getElementById('btn-confirm-delete').onclick = () => {
+        printers = printers.filter(p => p.id !== id);
+        saveLocalData();
+        refreshAll();
+        closeDeleteModal();
+        showToast('Impressora removida do estoque.');
+        if (sheetsApiUrl) callSheetsApi({ action: 'deletePrinter', id });
+      };
+      document.getElementById('delete-modal').classList.remove('hidden');
+    }
+
+    function closeDeleteModal() {
+      document.getElementById('delete-modal').classList.add('hidden');
+    }
+
+    // ==================== FLUXO DE MOVIMENTAÇÃO ====================
+    function openMoveModal(id) {
+      const printer = printers.find(p => p.id === id);
+      if (!printer) return;
+
+      document.getElementById('move-printer-id').value = printer.id;
+      document.getElementById('move-info-model').textContent = printer.modelo;
+      document.getElementById('move-info-serial').textContent = printer.serial;
+      document.getElementById('move-info-current-badge').innerHTML = getStatusBadgeHTML(printer.status, 'xs');
+      document.getElementById('move-info-location').textContent = printer.localizacao;
+
+      const statusSelect = document.getElementById('move-new-status');
+      if (printer.status === 'Disponível no Estoque') {
+        statusSelect.value = 'Em Uso (Backup)';
+        document.getElementById('move-new-location').value = '';
+      } else {
+        statusSelect.value = 'Disponível no Estoque';
+        document.getElementById('move-new-location').value = 'Estoque TI - Prateleira A1';
+      }
+
+      document.getElementById('move-note').value = '';
+      document.getElementById('move-modal').classList.remove('hidden');
+    }
+
+    function updateMovePreview() {
+      const newStatus = document.getElementById('move-new-status').value;
+      const locInput = document.getElementById('move-new-location');
+      if (newStatus === 'Disponível no Estoque' && !locInput.value) {
+        locInput.value = 'Estoque TI - Prateleira A1';
+      } else if (newStatus === 'Em Manutenção' && !locInput.value) {
+        locInput.value = 'Assistência Técnica Autorizada';
+      } else if (newStatus === 'Descartada / Baixada' && !locInput.value) {
+        locInput.value = 'Sala de Descarte TI';
+      }
+    }
+
+    function closeMoveModal() {
+      document.getElementById('move-modal').classList.add('hidden');
+    }
+
+    function confirmMovement(event) {
+      event.preventDefault();
+      const id = document.getElementById('move-printer-id').value;
+      const newStatus = document.getElementById('move-new-status').value;
+      const newLocation = document.getElementById('move-new-location').value.trim();
+      const note = document.getElementById('move-note').value.trim();
+
+      const idx = printers.findIndex(p => p.id === id);
+      if (idx === -1) return;
+
+      const printer = printers[idx];
+      const oldStatus = printer.status;
+      const oldLocation = printer.localizacao;
+
+      printer.status = newStatus;
+      printer.localizacao = newLocation;
+      printer.movimentacoes = (printer.movimentacoes || 0) + 1;
+      if (note) printer.observacoes = note;
+
+      const historyEntry = {
+        id: 'MOV-' + Date.now().toString().slice(-6),
+        timestamp: new Date().toISOString(),
+        printerId: printer.id,
+        modelo: printer.modelo,
+        serial: printer.serial,
+        statusAnterior: oldStatus,
+        statusNovo: newStatus,
+        localAnterior: oldLocation,
+        localNovo: newLocation,
+        responsavel: currentUser.fullName,
+        observacao: note || 'Movimentação registrada.'
+      };
+
+      historyLogs.unshift(historyEntry);
+      saveLocalData();
+      refreshAll();
+      closeMoveModal();
+      showToast(`Movimentação salva! Contador: ${printer.movimentacoes}x`);
+
+      if (sheetsApiUrl) {
+        callSheetsApi({ action: 'movePrinter', printer, historyEntry });
+      }
+    }
+
+    // ==================== HISTÓRICO SIMPLIFICADO ====================
+    function renderHistory() {
+      const query = document.getElementById('search-history').value.trim().toLowerCase();
+      const container = document.getElementById('history-cards-container');
+
+      const filtered = historyLogs.filter(h => {
+        return !query ||
+          h.modelo.toLowerCase().includes(query) ||
+          h.serial.toLowerCase().includes(query) ||
+          h.localAnterior.toLowerCase().includes(query) ||
+          h.localNovo.toLowerCase().includes(query) ||
+          (h.responsavel && h.responsavel.toLowerCase().includes(query)) ||
+          (h.observacao && h.observacao.toLowerCase().includes(query));
+      });
+
+      if (filtered.length === 0) {
+        container.innerHTML = `
+          <div class="bg-white rounded-2xl border border-slate-200 p-12 text-center text-slate-400">
+            <i class="ph-bold ph-clock-counter-clockwise text-3xl mb-2"></i>
+            <p class="text-sm font-medium">Nenhuma movimentação encontrada.</p>
+          </div>
+        `;
+        return;
+      }
+
+      container.innerHTML = filtered.map(h => buildHistoryCardHTML(h)).join('');
+    }
+
+    // ==================== GERENCIAMENTO DE USUÁRIOS ====================
+    function renderUsers() {
+      const tbody = document.getElementById('users-table-body');
+      tbody.innerHTML = usersList.map(u => `
+        <tr class="hover:bg-slate-50 transition">
+          <td class="py-4 px-5 font-bold text-slate-900">${escapeHTML(u.fullName)}</td>
+          <td class="py-4 px-5 font-mono text-xs text-slate-700">${escapeHTML(u.username)}</td>
+          <td class="py-4 px-5">
+            ${u.role === 'Administrador'
+              ? '<span class="px-2.5 py-1 rounded-full text-xs font-bold bg-brand-50 text-brand-700 border border-brand-200">Administrador</span>'
+              : '<span class="px-2.5 py-1 rounded-full text-xs font-bold bg-slate-100 text-slate-700 border border-slate-200">Operador</span>'
+            }
+          </td>
+          <td class="py-4 px-5 text-right">
+            ${u.username.toLowerCase() !== currentUser?.username?.toLowerCase() ? `
+              <button onclick="deleteUser('${escapeHTML(u.username)}')" class="text-xs font-bold text-rose-600 hover:bg-rose-50 px-3 py-1.5 rounded-lg transition">
+                Remover
+              </button>
+            ` : '<span class="text-xs text-slate-400 italic">Sessão atual</span>'}
+          </td>
+        </tr>
+      `).join('');
+    }
+
+    function openNewUserModal() {
+      document.getElementById('user-fullname').value = '';
+      document.getElementById('user-username').value = '';
+      document.getElementById('user-password').value = '';
+      document.getElementById('user-role').value = 'Operador';
+      document.getElementById('user-form-error').classList.add('hidden');
+      document.getElementById('user-modal').classList.remove('hidden');
+    }
+
+    function closeUserModal() {
+      document.getElementById('user-modal').classList.add('hidden');
+    }
+
+    function saveUser(event) {
+      event.preventDefault();
+      const fullName = document.getElementById('user-fullname').value.trim();
+      const username = document.getElementById('user-username').value.trim().toLowerCase();
+      const password = document.getElementById('user-password').value.trim();
+      const role = document.getElementById('user-role').value;
+      const errorBox = document.getElementById('user-form-error');
+
+      if (usersList.some(u => u.username.toLowerCase() === username)) {
+        errorBox.textContent = `O login "${username}" já está cadastrado.`;
+        errorBox.classList.remove('hidden');
+        return;
+      }
+
+      const newUser = { username, password, fullName, role };
+      usersList.push(newUser);
+      saveLocalData();
+      renderUsers();
+      closeUserModal();
+      showToast('Usuário cadastrado com sucesso!');
+
+      if (sheetsApiUrl) {
+        callSheetsApi({ action: 'saveUser', user: newUser });
+      }
+    }
+
+    function deleteUser(username) {
+      usersList = usersList.filter(u => u.username.toLowerCase() !== username.toLowerCase());
+      saveLocalData();
+      renderUsers();
+      showToast('Usuário removido.');
+      if (sheetsApiUrl) {
+        callSheetsApi({ action: 'deleteUser', username });
+      }
+    }
+
+    // ==================== EXPORTAÇÃO CSV E UTILITÁRIOS ====================
+    function exportCSV() {
+      const headers = ['Modelo', 'Serial', 'Status Atual', 'Localizacao Atual', 'Data Entrada', 'Movimentacoes', 'Observacoes'];
+      const rows = printers.map(p => [
+        `"${(p.modelo || '').replace(/"/g, '""')}"`,
+        `"${(p.serial || '').replace(/"/g, '""')}"`,
+        `"${(p.status || '').replace(/"/g, '""')}"`,
+        `"${(p.localizacao || '').replace(/"/g, '""')}"`,
+        `"${formatDateBR(p.dataEntrada)}"`,
+        p.movimentacoes,
+        `"${(p.observacoes || '').replace(/"/g, '""')}"`
+      ]);
+
+      const csvContent = '\uFEFF' + [headers.join(';'), ...rows.map(r => r.join(';'))].join('\n');
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.setAttribute('href', url);
+      link.setAttribute('download', `controle_estoque_impressoras_${new Date().toISOString().slice(0,10)}.csv`);
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      showToast('Relatório CSV exportado!');
+    }
+
+    function showToast(message) {
+      const toast = document.getElementById('toast');
+      document.getElementById('toast-message').textContent = message;
+      toast.classList.remove('translate-y-20', 'opacity-0');
+      setTimeout(() => {
+        toast.classList.add('translate-y-20', 'opacity-0');
+      }, 3000);
+    }
+
+    function formatDateBR(isoDate) {
+      if (!isoDate) return '-';
+      const parts = String(isoDate).split('-');
+      if (parts.length !== 3) return isoDate;
+      return `${parts[2]}/${parts[1]}/${parts[0]}`;
+    }
+
+    function formatDateTime(isoString) {
+      if (!isoString) return '-';
+      const d = new Date(isoString);
+      return d.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' }) +
+             ' ' +
+             d.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+    }
+
+    function escapeHTML(str) {
+      if (!str) return '';
+      return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;');
+    }
+  </script>
+</body>
+</html>
