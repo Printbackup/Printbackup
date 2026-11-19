@@ -116,6 +116,12 @@
           <i class="ph-bold ph-arrow-right"></i>
         </button>
 
+        <div class="text-center pt-1">
+          <button type="button" onclick="openForgotPasswordModal()" class="text-xs font-semibold text-brand-600 hover:text-brand-700 hover:underline transition">
+            Esqueci minha senha
+          </button>
+        </div>
+
         <!-- Acesso rápido para teste -->
         <div id="quick-login-box" class="pt-3 border-t border-slate-100">
           <p class="text-[11px] font-medium text-slate-400 text-center mb-2">Acesso rápido (clique para preencher):</p>
@@ -480,6 +486,7 @@
                 <tr class="bg-slate-50 border-b border-slate-200 text-xs font-bold uppercase tracking-wider text-slate-500">
                   <th class="py-4 px-5">Nome Completo</th>
                   <th class="py-4 px-5">Login</th>
+                  <th class="py-4 px-5">E-mail</th>
                   <th class="py-4 px-5">Perfil</th>
                   <th class="py-4 px-5 text-right">Ações</th>
                 </tr>
@@ -650,6 +657,10 @@
           <input type="password" id="user-password" required placeholder="Defina uma senha" class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 focus:bg-white" />
         </div>
         <div>
+          <label class="block text-xs font-bold text-slate-700 mb-1">E-mail para recuperação *</label>
+          <input type="email" id="user-email" required placeholder="Ex: tecnico@empresa.com.br" class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 focus:bg-white" />
+        </div>
+        <div>
           <label class="block text-xs font-bold text-slate-700 mb-1">Perfil de Acesso *</label>
           <select id="user-role" required class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 focus:bg-white">
             <option value="Operador">Operador (Técnico)</option>
@@ -738,6 +749,91 @@
     </div>
   </div>
 
+  <!-- ==================== MODAL 6: ESQUECI MINHA SENHA ==================== -->
+  <div id="forgot-password-modal" class="fixed inset-0 z-50 hidden modal-backdrop flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl max-w-md w-full shadow-2xl border border-slate-200 overflow-hidden animate-fade-in">
+      <div class="px-6 py-4 border-b border-slate-100 flex items-center justify-between bg-slate-50">
+        <div class="flex items-center gap-2.5">
+          <div class="w-9 h-9 rounded-xl bg-brand-100 text-brand-700 flex items-center justify-center">
+            <i class="ph-bold ph-envelope-simple text-lg"></i>
+          </div>
+          <div>
+            <h3 class="text-base font-bold text-slate-900">Recuperar Senha</h3>
+            <p class="text-xs text-slate-500">Enviaremos um link de redefinição para o seu e-mail</p>
+          </div>
+        </div>
+        <button onclick="closeForgotPasswordModal()" class="text-slate-400 hover:text-slate-600 p-1 rounded-lg">
+          <i class="ph-bold ph-x text-lg"></i>
+        </button>
+      </div>
+
+      <form onsubmit="handleForgotPassword(event)" class="p-6 space-y-4">
+        <div>
+          <label class="block text-xs font-bold text-slate-700 mb-1">Seu Login ou E-mail cadastrado *</label>
+          <input type="text" id="forgot-identifier" required placeholder="Ex: tecnico ou tecnico@empresa.com.br" class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 focus:bg-white" />
+        </div>
+
+        <div id="forgot-error" class="hidden text-xs font-semibold text-rose-600 bg-rose-50 border border-rose-200 px-3.5 py-2.5 rounded-xl"></div>
+        <div id="forgot-success" class="hidden text-xs font-semibold text-emerald-700 bg-emerald-50 border border-emerald-200 px-3.5 py-2.5 rounded-xl space-y-2"></div>
+
+        <div class="pt-2 flex items-center justify-end gap-2 border-t border-slate-100">
+          <button type="button" onclick="closeForgotPasswordModal()" class="px-4 py-2 text-sm font-semibold text-slate-600 hover:bg-slate-100 rounded-xl">Fechar</button>
+          <button type="submit" id="btn-forgot-submit" class="px-5 py-2.5 bg-brand-600 hover:bg-brand-700 text-white text-sm font-bold rounded-xl shadow-xs transition flex items-center gap-1.5">
+            <i class="ph-bold ph-paper-plane-tilt"></i>
+            <span>Enviar Link</span>
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ==================== MODAL 7: CRIAR NOVA SENHA ==================== -->
+  <div id="reset-password-modal" class="fixed inset-0 z-50 hidden modal-backdrop flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl max-w-md w-full shadow-2xl border border-slate-200 overflow-hidden animate-fade-in">
+      <div class="px-6 py-4 border-b border-slate-100 flex items-center justify-between bg-slate-50">
+        <div class="flex items-center gap-2.5">
+          <div class="w-9 h-9 rounded-xl bg-emerald-100 text-emerald-700 flex items-center justify-center">
+            <i class="ph-bold ph-key text-lg"></i>
+          </div>
+          <div>
+            <h3 class="text-base font-bold text-slate-900">Criar Nova Senha</h3>
+            <p class="text-xs text-slate-500">Defina sua nova senha de acesso ao PrintBackup Pro</p>
+          </div>
+        </div>
+        <button onclick="closeResetPasswordModal()" class="text-slate-400 hover:text-slate-600 p-1 rounded-lg">
+          <i class="ph-bold ph-x text-lg"></i>
+        </button>
+      </div>
+
+      <form onsubmit="handleResetPassword(event)" class="p-6 space-y-4">
+        <div>
+          <label class="block text-xs font-bold text-slate-700 mb-1">Código de Recuperação *</label>
+          <input type="text" id="reset-token-input" required placeholder="Código recebido por e-mail" class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-mono focus:outline-none focus:ring-2 focus:ring-brand-500 focus:bg-white" />
+        </div>
+
+        <div>
+          <label class="block text-xs font-bold text-slate-700 mb-1">Nova Senha *</label>
+          <input type="password" id="reset-new-password" required minlength="4" placeholder="Mínimo 4 caracteres" class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 focus:bg-white" />
+        </div>
+
+        <div>
+          <label class="block text-xs font-bold text-slate-700 mb-1">Confirmar Nova Senha *</label>
+          <input type="password" id="reset-confirm-password" required minlength="4" placeholder="Repita a nova senha" class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 focus:bg-white" />
+        </div>
+
+        <div id="reset-error" class="hidden text-xs font-semibold text-rose-600 bg-rose-50 border border-rose-200 px-3.5 py-2.5 rounded-xl"></div>
+        <div id="reset-success" class="hidden text-xs font-semibold text-emerald-700 bg-emerald-50 border border-emerald-200 px-3.5 py-2.5 rounded-xl"></div>
+
+        <div class="pt-2 flex items-center justify-end gap-2 border-t border-slate-100">
+          <button type="button" onclick="closeResetPasswordModal()" class="px-4 py-2 text-sm font-semibold text-slate-600 hover:bg-slate-100 rounded-xl">Cancelar</button>
+          <button type="submit" id="btn-reset-submit" class="px-5 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-bold rounded-xl shadow-xs transition">
+            Salvar Nova Senha
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
   <!-- Toast de Notificação -->
   <div id="toast" class="fixed bottom-5 right-5 z-50 transform translate-y-20 opacity-0 transition-all duration-300 pointer-events-none">
     <div class="bg-slate-900 text-white px-4 py-3 rounded-xl shadow-lg flex items-center gap-2.5 text-sm font-semibold">
@@ -813,11 +909,21 @@ function setupSheets() {
   let sheetUsers = ss.getSheetByName('Usuarios');
   if (!sheetUsers) {
     sheetUsers = ss.insertSheet('Usuarios');
-    sheetUsers.appendRow(['Usuario', 'Senha', 'Nome_Completo', 'Perfil']);
-    sheetUsers.getRange('A1:D1').setFontWeight('bold').setBackground('#e2e8f0');
+    sheetUsers.appendRow(['Usuario', 'Senha', 'Nome_Completo', 'Perfil', 'Email', 'Token_Reset', 'Token_Expira']);
+    sheetUsers.getRange('A1:G1').setFontWeight('bold').setBackground('#e2e8f0');
     sheetUsers.setFrozenRows(1);
-    sheetUsers.appendRow(['admin', '1234', 'Administrador TI', 'Administrador']);
-    sheetUsers.appendRow(['tecnico', '1234', 'Técnico Laboratório', 'Operador']);
+    sheetUsers.appendRow(['admin', '1234', 'Administrador TI', 'Administrador', '', '', '']);
+    sheetUsers.appendRow(['tecnico', '1234', 'Técnico Laboratório', 'Operador', '', '', '']);
+  } else {
+    const lastCol = sheetUsers.getLastColumn();
+    const headers = lastCol > 0 ? sheetUsers.getRange(1, 1, 1, lastCol).getValues()[0] : [];
+    const needed = ['Email', 'Token_Reset', 'Token_Expira'];
+    needed.forEach((colName) => {
+      if (headers.indexOf(colName) === -1) {
+        const nextCol = sheetUsers.getLastColumn() + 1;
+        sheetUsers.getRange(1, nextCol).setValue(colName).setFontWeight('bold').setBackground('#e2e8f0');
+      }
+    });
   }
 
   return ss;
@@ -833,7 +939,7 @@ function doGet(e) {
       printers: mapPrintersFromSheet(ss.getSheetByName('Estoque_Impressoras')),
       history: mapHistoryFromSheet(ss.getSheetByName('Historico_Movimentacoes')),
       users: getSheetObjects(ss.getSheetByName('Usuarios')).map(u => ({
-        username: u.Usuario, fullName: u.Nome_Completo, role: u.Perfil
+        username: u.Usuario, fullName: u.Nome_Completo, role: u.Perfil, email: u.Email || ''
       }))
     });
   }
@@ -856,7 +962,7 @@ function doPost(e) {
       if (!found) return jsonResponse({ ok: false, error: 'Usuário ou senha inválidos.' });
       return jsonResponse({
         ok: true,
-        user: { username: found.Usuario, fullName: found.Nome_Completo, role: found.Perfil }
+        user: { username: found.Usuario, fullName: found.Nome_Completo, role: found.Perfil, email: found.Email || '' }
       });
     }
 
@@ -924,8 +1030,95 @@ function doPost(e) {
     if (action === 'saveUser') {
       const sheet = ss.getSheetByName('Usuarios');
       const u = payload.user;
-      sheet.appendRow([u.username, u.password, u.fullName, u.role]);
+      sheet.appendRow([u.username, u.password, u.fullName, u.role, u.email || '', '', '']);
       return jsonResponse({ ok: true });
+    }
+
+    if (action === 'sendResetLink') {
+      const sheet = ss.getSheetByName('Usuarios');
+      const data = sheet.getDataRange().getValues();
+      const headers = data[0];
+      const idxUser = headers.indexOf('Usuario');
+      const idxName = headers.indexOf('Nome_Completo');
+      const idxEmail = headers.indexOf('Email');
+      const idxToken = headers.indexOf('Token_Reset');
+      const idxExpira = headers.indexOf('Token_Expira');
+
+      const ident = String(payload.identifier || '').trim().toLowerCase();
+      let foundRow = -1;
+      for (let i = 1; i < data.length; i++) {
+        const uVal = String(data[i][idxUser] || '').trim().toLowerCase();
+        const eVal = idxEmail >= 0 ? String(data[i][idxEmail] || '').trim().toLowerCase() : '';
+        if (uVal === ident || (eVal && eVal === ident)) {
+          foundRow = i + 1;
+          break;
+        }
+      }
+
+      if (foundRow === -1) {
+        return jsonResponse({ ok: false, error: 'Nenhum usuário encontrado com esse login ou e-mail.' });
+      }
+
+      const recipientEmail = idxEmail >= 0 ? String(sheet.getRange(foundRow, idxEmail + 1).getValue() || '').trim() : '';
+      if (!recipientEmail) {
+        return jsonResponse({ ok: false, error: 'Este usuário não possui e-mail cadastrado. Solicite ao administrador.' });
+      }
+
+      const userName = idxName >= 0 ? String(sheet.getRange(foundRow, idxName + 1).getValue() || 'Usuário') : 'Usuário';
+      const token = Utilities.getUuid().replace(/-/g, '').substring(0, 12).toUpperCase();
+      const expiresAt = Date.now() + 15 * 60 * 1000;
+
+      if (idxToken >= 0) sheet.getRange(foundRow, idxToken + 1).setValue(token);
+      if (idxExpira >= 0) sheet.getRange(foundRow, idxExpira + 1).setValue(expiresAt);
+
+      const baseUrl = String(payload.appUrl || 'https://printbackup.github.io/Printbackup/').split('?')[0];
+      const resetLink = baseUrl + '?resetToken=' + encodeURIComponent(token);
+
+      MailApp.sendEmail({
+        to: recipientEmail,
+        subject: 'PrintBackup Pro — Redefinição de Senha',
+        htmlBody:
+          '<p>Olá, <strong>' + userName + '</strong>,</p>' +
+          '<p>Recebemos uma solicitação para redefinir a senha do <strong>PrintBackup Pro</strong>.</p>' +
+          '<p><a href="' + resetLink + '" style="display:inline-block;padding:10px 18px;background:#2563eb;color:#ffffff;text-decoration:none;border-radius:8px;font-weight:bold;">Criar Nova Senha</a></p>' +
+          '<p>Ou copie e cole este link no navegador:<br>' + resetLink + '</p>' +
+          '<p>Código de verificação: <strong>' + token + '</strong> (válido por 15 minutos).</p>'
+      });
+
+      return jsonResponse({ ok: true, maskedEmail: recipientEmail });
+    }
+
+    if (action === 'resetPassword') {
+      const sheet = ss.getSheetByName('Usuarios');
+      const data = sheet.getDataRange().getValues();
+      const headers = data[0];
+      const idxPass = headers.indexOf('Senha');
+      const idxToken = headers.indexOf('Token_Reset');
+      const idxExpira = headers.indexOf('Token_Expira');
+
+      const tokenInput = String(payload.token || '').trim().toUpperCase();
+      const newPassword = String(payload.newPassword || '').trim();
+
+      if (!tokenInput || !newPassword) {
+        return jsonResponse({ ok: false, error: 'Informe o código de recuperação e a nova senha.' });
+      }
+
+      for (let i = 1; i < data.length; i++) {
+        const storedToken = idxToken >= 0 ? String(data[i][idxToken] || '').trim().toUpperCase() : '';
+        const storedExp = idxExpira >= 0 ? Number(data[i][idxExpira] || 0) : 0;
+        if (storedToken && storedToken === tokenInput) {
+          if (storedExp && Date.now() > storedExp) {
+            return jsonResponse({ ok: false, error: 'Este link/código expirou. Solicite uma nova recuperação.' });
+          }
+          const rowNum = i + 1;
+          sheet.getRange(rowNum, idxPass + 1).setValue(newPassword);
+          if (idxToken >= 0) sheet.getRange(rowNum, idxToken + 1).setValue('');
+          if (idxExpira >= 0) sheet.getRange(rowNum, idxExpira + 1).setValue('');
+          return jsonResponse({ ok: true });
+        }
+      }
+
+      return jsonResponse({ ok: false, error: 'Código de recuperação inválido ou já utilizado.' });
     }
 
     if (action === 'deleteUser') {
@@ -1018,8 +1211,8 @@ function jsonResponse(obj) {
     let modelChartInstance = null;
 
     const defaultUsers = [
-      { username: 'admin', password: '1234', fullName: 'Administrador TI', role: 'Administrador' },
-      { username: 'tecnico', password: '1234', fullName: 'Técnico Laboratório', role: 'Operador' }
+      { username: 'admin', password: '1234', fullName: 'Administrador TI', role: 'Administrador', email: '' },
+      { username: 'tecnico', password: '1234', fullName: 'Técnico Laboratório', role: 'Operador', email: '' }
     ];
 
     const defaultPrinters = [
@@ -1139,6 +1332,12 @@ function jsonResponse(obj) {
       if (savedSession) {
         currentUser = JSON.parse(savedSession);
         enterApplication();
+      }
+
+      const urlParams = new URLSearchParams(window.location.search);
+      const resetToken = urlParams.get('resetToken');
+      if (resetToken) {
+        openResetPasswordModal(resetToken);
       }
     });
 
@@ -1954,6 +2153,7 @@ function jsonResponse(obj) {
         <tr class="hover:bg-slate-50 transition">
           <td class="py-4 px-5 font-bold text-slate-900">${escapeHTML(u.fullName)}</td>
           <td class="py-4 px-5 font-mono text-xs text-slate-700">${escapeHTML(u.username)}</td>
+          <td class="py-4 px-5 text-xs text-slate-600">${u.email ? escapeHTML(u.email) : '<span class="italic text-slate-300">-</span>'}</td>
           <td class="py-4 px-5">
             ${u.role === 'Administrador'
               ? '<span class="px-2.5 py-1 rounded-full text-xs font-bold bg-brand-50 text-brand-700 border border-brand-200">Administrador</span>'
@@ -1975,6 +2175,7 @@ function jsonResponse(obj) {
       document.getElementById('user-fullname').value = '';
       document.getElementById('user-username').value = '';
       document.getElementById('user-password').value = '';
+      document.getElementById('user-email').value = '';
       document.getElementById('user-role').value = 'Operador';
       document.getElementById('user-form-error').classList.add('hidden');
       document.getElementById('user-modal').classList.remove('hidden');
@@ -1989,6 +2190,7 @@ function jsonResponse(obj) {
       const fullName = document.getElementById('user-fullname').value.trim();
       const username = document.getElementById('user-username').value.trim().toLowerCase();
       const password = document.getElementById('user-password').value.trim();
+      const email = document.getElementById('user-email').value.trim().toLowerCase();
       const role = document.getElementById('user-role').value;
       const errorBox = document.getElementById('user-form-error');
 
@@ -1998,7 +2200,7 @@ function jsonResponse(obj) {
         return;
       }
 
-      const newUser = { username, password, fullName, role };
+      const newUser = { username, password, fullName, role, email };
       usersList.push(newUser);
       saveLocalData();
       renderUsers();
@@ -2017,6 +2219,123 @@ function jsonResponse(obj) {
       showToast('Usuário removido.');
       if (sheetsApiUrl) {
         callSheetsApi({ action: 'deleteUser', username });
+      }
+    }
+
+    // ==================== RECUPERAÇÃO DE SENHA POR E-MAIL ====================
+    function openForgotPasswordModal() {
+      document.getElementById('forgot-identifier').value = '';
+      document.getElementById('forgot-error').classList.add('hidden');
+      document.getElementById('forgot-success').classList.add('hidden');
+      document.getElementById('forgot-password-modal').classList.remove('hidden');
+    }
+
+    function closeForgotPasswordModal() {
+      document.getElementById('forgot-password-modal').classList.add('hidden');
+    }
+
+    async function handleForgotPassword(event) {
+      event.preventDefault();
+      const identifier = document.getElementById('forgot-identifier').value.trim();
+      const errBox = document.getElementById('forgot-error');
+      const okBox = document.getElementById('forgot-success');
+      const btn = document.getElementById('btn-forgot-submit');
+
+      errBox.classList.add('hidden');
+      okBox.classList.add('hidden');
+
+      if (!sheetsApiUrl) {
+        errBox.textContent = 'A conexão com o Google Planilhas não está configurada.';
+        errBox.classList.remove('hidden');
+        return;
+      }
+
+      btn.disabled = true;
+      btn.innerHTML = `<i class="ph-bold ph-spinner animate-spin"></i><span>Enviando...</span>`;
+
+      try {
+        const appUrl = window.location.origin + window.location.pathname;
+        const res = await callSheetsApi({ action: 'sendResetLink', identifier, appUrl });
+        if (res && res.ok) {
+          okBox.innerHTML = `
+            <p>Link de redefinição enviado para <strong>${escapeHTML(res.maskedEmail || identifier)}</strong>! Verifique sua caixa de entrada e spam.</p>
+            <button type="button" onclick="closeForgotPasswordModal(); openResetPasswordModal('');" class="underline font-bold text-emerald-800">Já recebi o código — criar nova senha</button>
+          `;
+          okBox.classList.remove('hidden');
+        } else {
+          errBox.textContent = (res && res.error) ? res.error : 'Não foi possível enviar o link de recuperação.';
+          errBox.classList.remove('hidden');
+        }
+      } catch (err) {
+        errBox.textContent = 'Erro de comunicação com o Google Apps Script.';
+        errBox.classList.remove('hidden');
+      } finally {
+        btn.disabled = false;
+        btn.innerHTML = `<i class="ph-bold ph-paper-plane-tilt"></i><span>Enviar Link</span>`;
+      }
+    }
+
+    function openResetPasswordModal(token = '') {
+      document.getElementById('reset-token-input').value = token;
+      document.getElementById('reset-new-password').value = '';
+      document.getElementById('reset-confirm-password').value = '';
+      document.getElementById('reset-error').classList.add('hidden');
+      document.getElementById('reset-success').classList.add('hidden');
+      document.getElementById('reset-password-modal').classList.remove('hidden');
+    }
+
+    function closeResetPasswordModal() {
+      document.getElementById('reset-password-modal').classList.add('hidden');
+      if (window.location.search.includes('resetToken=')) {
+        window.history.replaceState({}, document.title, window.location.pathname);
+      }
+    }
+
+    async function handleResetPassword(event) {
+      event.preventDefault();
+      const token = document.getElementById('reset-token-input').value.trim();
+      const newPassword = document.getElementById('reset-new-password').value.trim();
+      const confirmPassword = document.getElementById('reset-confirm-password').value.trim();
+      const errBox = document.getElementById('reset-error');
+      const okBox = document.getElementById('reset-success');
+      const btn = document.getElementById('btn-reset-submit');
+
+      errBox.classList.add('hidden');
+      okBox.classList.add('hidden');
+
+      if (newPassword !== confirmPassword) {
+        errBox.textContent = 'A nova senha e a confirmação não coincidem.';
+        errBox.classList.remove('hidden');
+        return;
+      }
+
+      if (!sheetsApiUrl) {
+        errBox.textContent = 'A conexão com o Google Planilhas não está configurada.';
+        errBox.classList.remove('hidden');
+        return;
+      }
+
+      btn.disabled = true;
+      btn.textContent = 'Salvando...';
+
+      try {
+        const res = await callSheetsApi({ action: 'resetPassword', token, newPassword });
+        if (res && res.ok) {
+          okBox.textContent = 'Senha redefinida com sucesso! Você já pode fazer login com a nova senha.';
+          okBox.classList.remove('hidden');
+          setTimeout(() => {
+            closeResetPasswordModal();
+          }, 1800);
+        } else {
+          errBox.textContent = (res && res.error) ? res.error : 'Não foi possível redefinir a senha.';
+          errBox.classList.remove('hidden');
+        }
+      } catch (err) {
+        errBox.textContent = 'Erro de comunicação com o Google Apps Script.';
+        errBox.classList.remove('hidden');
+      } finally {
+        btn.disabled = false;
+        btn.textContent = 'Salvar Nova Senha';
       }
     }
 
