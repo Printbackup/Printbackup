@@ -131,12 +131,7 @@
           </div>
         </div>
 
-        <div class="pt-2 text-center">
-          <button type="button" onclick="openSheetsConfigModal()" class="inline-flex items-center gap-1.5 text-xs font-semibold text-emerald-700 hover:text-emerald-800 bg-emerald-50 hover:bg-emerald-100 px-3.5 py-2 rounded-xl transition">
-            <i class="ph-bold ph-google-logo"></i>
-            Configurar Conexão Google Planilhas
-          </button>
-        </div>
+
       </form>
     </div>
   </div>
@@ -192,7 +187,7 @@
               <i class="ph-bold ph-arrows-clockwise text-lg"></i>
             </button>
 
-            <button onclick="openSheetsConfigModal()" class="p-2.5 text-slate-600 hover:text-emerald-700 hover:bg-emerald-50 rounded-xl border border-slate-200 transition" title="Configurar Google Planilhas">
+            <button onclick="openSheetsConfigModal()" id="btn-header-sheets-config" class="hidden p-2.5 text-slate-600 hover:text-emerald-700 hover:bg-emerald-50 rounded-xl border border-slate-200 transition" title="Configurar Google Planilhas">
               <i class="ph-bold ph-file-xls text-emerald-600 text-lg"></i>
             </button>
 
@@ -1016,7 +1011,8 @@ function jsonResponse(obj) {
     let historyLogs = [];
     let usersList = [];
     let currentUser = null;
-    let sheetsApiUrl = '';
+    const DEFAULT_SHEETS_API_URL = 'https://script.google.com/macros/s/AKfycbw7c48bzGVKruLjhMR9AQAMeNhepTI6H2kRiGJ7I3Msbc1lA2wSQs_r-eJ8kHRDO04W/exec';
+    let sheetsApiUrl = DEFAULT_SHEETS_API_URL;
     let currentStatusFilter = 'ALL';
     let statusChartInstance = null;
     let modelChartInstance = null;
@@ -1134,7 +1130,7 @@ function jsonResponse(obj) {
     // ==================== INICIALIZAÇÃO ====================
     document.addEventListener('DOMContentLoaded', () => {
       document.getElementById('apps-script-code').value = GOOGLE_APPS_SCRIPT_TEMPLATE;
-      sheetsApiUrl = localStorage.getItem(STORAGE_KEYS.SHEETS_URL) || '';
+      sheetsApiUrl = localStorage.getItem(STORAGE_KEYS.SHEETS_URL) || DEFAULT_SHEETS_API_URL;
       updateConnectionIndicators();
 
       loadLocalData();
@@ -1341,10 +1337,12 @@ function jsonResponse(obj) {
         roleBadge.className = 'inline-block text-[10px] font-bold px-1.5 py-0.2 rounded bg-brand-50 text-brand-700';
         document.getElementById('nav-usuarios').classList.remove('hidden');
         document.getElementById('mob-usuarios').classList.remove('hidden');
+        document.getElementById('btn-header-sheets-config').classList.remove('hidden');
       } else {
         roleBadge.className = 'inline-block text-[10px] font-bold px-1.5 py-0.2 rounded bg-slate-100 text-slate-600';
         document.getElementById('nav-usuarios').classList.add('hidden');
         document.getElementById('mob-usuarios').classList.add('hidden');
+        document.getElementById('btn-header-sheets-config').classList.add('hidden');
       }
 
       switchTab('dashboard');
